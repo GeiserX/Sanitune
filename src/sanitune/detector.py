@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
+import unicodedata
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
@@ -20,8 +21,17 @@ class FlaggedWord:
     index: int
 
 
+def _normalize(text: str) -> str:
+    """Normalize text by removing diacritics for accent-insensitive matching."""
+    nfkd = unicodedata.normalize("NFKD", text)
+    return "".join(c for c in nfkd if not unicodedata.combining(c)).lower()
+
+
 def load_wordlist(language: str) -> set[str]:
     """Load the built-in profanity word list for a language."""
+    if not re.match(r"^[a-z]{2,5}$", language):
+        raise ValueError(f"Invalid language code: '{language}'. Expected 2-5 lowercase letters.")
+
     try:
         ref = resources.files("sanitune.wordlists").joinpath(f"{language}.txt")
         text = ref.read_text(encoding="utf-8")
@@ -36,6 +46,10 @@ def load_wordlist(language: str) -> set[str]:
         line = line.strip()
         if line and not line.startswith("#"):
             words.add(line.lower())
+            # Also add accent-stripped form for matching
+            normalized = _normalize(line)
+            if normalized != line.lower():
+                words.add(normalized)
     return words
 
 
@@ -75,13 +89,18 @@ def detect(
         if not cleaned:
             continue
 
-        if cleaned in profanity_set:
+        # Try both raw and accent-stripped forms
+        cleaned_normalized = _normalize(cleaned)
+
+        if cleaned in profanity_set or cleaned_normalized in profanity_set:
             flagged.append(FlaggedWord(word=word, matched_term=cleaned, index=i))
             continue
 
         # Check if the word contains a profane substring (for compound words / suffixed forms)
+        # Note: this can produce false positives (e.g. "cockpit" matching "cock").
+        # The >=4 char threshold mitigates most cases. Consider word-boundary regex for v0.2.0.
         for term in profanity_set:
-            if len(term) >= 4 and term in cleaned and cleaned != term:
+            if len(term) >= 4 and term in cleaned_normalized and cleaned_normalized != term:
                 flagged.append(FlaggedWord(word=word, matched_term=term, index=i))
                 break
 

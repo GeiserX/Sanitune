@@ -68,15 +68,16 @@ def transcribe(
         tmp_path = Path(tmp.name)
         sf.write(tmp_path, audio_mono, sample_rate)
 
-    logger.info("Transcribing...")
-    result = model.transcribe(str(tmp_path), language=language)
+    try:
+        logger.info("Transcribing...")
+        result = model.transcribe(str(tmp_path), language=language)
 
-    # Align for word-level timestamps
-    logger.info("Aligning word timestamps...")
-    model_a, metadata = whisperx.load_align_model(language_code=language, device=device)
-    result = whisperx.align(result["segments"], model_a, metadata, str(tmp_path), device)
-
-    tmp_path.unlink(missing_ok=True)
+        # Align for word-level timestamps
+        logger.info("Aligning word timestamps...")
+        model_a, metadata = whisperx.load_align_model(language_code=language, device=device)
+        result = whisperx.align(result["segments"], model_a, metadata, str(tmp_path), device)
+    finally:
+        tmp_path.unlink(missing_ok=True)
 
     # Extract words
     words = []
@@ -101,5 +102,7 @@ def transcribe(
             full_text_parts.append(segment["text"])
 
     full_text = " ".join(full_text_parts) if full_text_parts else " ".join(w.text for w in words)
+    if not words:
+        logger.warning("No words detected in transcription. The output will be identical to the input.")
     logger.info("Transcription complete: %d words detected", len(words))
     return TranscriptionResult(words=words, language=language, full_text=full_text)

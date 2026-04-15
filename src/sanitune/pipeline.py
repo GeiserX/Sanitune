@@ -7,7 +7,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from sanitune.config import Settings, detect_device
+from sanitune.config import detect_device
 from sanitune.detector import FlaggedWord, detect
 from sanitune.editor import edit
 from sanitune.remixer import remix
@@ -25,6 +25,9 @@ class PipelineResult:
     elapsed_seconds: float
 
 
+SUPPORTED_EXTENSIONS = {".wav", ".mp3", ".flac", ".ogg", ".m4a", ".aac", ".wma", ".opus"}
+
+
 def process(
     input_path: Path,
     output_path: Path | None = None,
@@ -36,6 +39,7 @@ def process(
     exclude_words: list[str] | None = None,
     bleep_freq: int = 1000,
     model_name: str = "htdemucs_ft",
+    max_file_size_mb: int = 200,
 ) -> PipelineResult:
     """Run the full Sanitune pipeline on an audio file.
 
@@ -54,6 +58,24 @@ def process(
         PipelineResult with output path, flagged words, and timing.
     """
     start_time = time.monotonic()
+
+    # Validate input file
+    if not input_path.is_file():
+        raise FileNotFoundError(f"Input file not found: {input_path}")
+
+    if input_path.suffix.lower() not in SUPPORTED_EXTENSIONS:
+        raise ValueError(
+            f"Unsupported file type '{input_path.suffix}'. "
+            f"Supported: {', '.join(sorted(SUPPORTED_EXTENSIONS))}"
+        )
+
+    file_size_mb = input_path.stat().st_size / (1024 * 1024)
+    if file_size_mb > max_file_size_mb:
+        raise ValueError(
+            f"Input file is {file_size_mb:.1f} MB, exceeding the "
+            f"{max_file_size_mb} MB limit. Set --max-file-size or SANITUNE_MAX_FILE_SIZE to override."
+        )
+
     resolved_device = detect_device(device)
     logger.info("Starting pipeline: %s → mode=%s, lang=%s, device=%s", input_path.name, mode, language, resolved_device)
 

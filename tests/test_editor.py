@@ -1,6 +1,7 @@
 """Tests for the audio editing module."""
 
 import numpy as np
+import pytest
 
 from sanitune.detector import FlaggedWord
 from sanitune.editor import edit
@@ -71,3 +72,15 @@ def test_edit_does_not_modify_original():
 
     edit(audio, sr, flagged, mode="mute")
     np.testing.assert_array_equal(audio, original)
+
+
+def test_edit_rejects_invalid_mode():
+    sr = 16000
+    audio = np.ones(sr, dtype=np.float32)
+    flagged = [_make_flagged("fuck", 0.3, 0.5)]
+
+    with pytest.raises(ValueError, match="Unknown edit mode"):
+        edit(audio, sr, flagged, mode="replace")
+
+    with pytest.raises(ValueError, match="Unknown edit mode"):
+        edit(audio, sr, flagged, mode="Mute")

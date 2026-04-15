@@ -1,5 +1,7 @@
 """Tests for the profanity detection module."""
 
+import pytest
+
 from sanitune.detector import FlaggedWord, detect, load_wordlist
 from sanitune.transcriber import Word
 
@@ -74,3 +76,31 @@ def test_flagged_word_has_index(sample_words):
     for fw in flagged:
         assert isinstance(fw.index, int)
         assert fw.index >= 0
+
+
+def test_load_wordlist_rejects_path_traversal():
+    with pytest.raises(ValueError, match="Invalid language code"):
+        load_wordlist("../../etc/passwd")
+
+    with pytest.raises(ValueError, match="Invalid language code"):
+        load_wordlist("EN")
+
+    with pytest.raises(ValueError, match="Invalid language code"):
+        load_wordlist("")
+
+
+def test_detect_accent_insensitive():
+    """Spanish words with/without accents should both match."""
+    words = [
+        Word(text="cabrón", start=0.0, end=0.5),
+        Word(text="cabron", start=0.5, end=1.0),
+    ]
+    flagged = detect(words, language="es")
+    assert len(flagged) == 2
+
+
+def test_detect_pito_in_spanish():
+    words = [Word(text="pito", start=0.0, end=0.5)]
+    flagged = detect(words, language="es")
+    assert len(flagged) == 1
+    assert flagged[0].matched_term == "pito"

@@ -67,6 +67,10 @@ def edit(
     Returns:
         Edited vocal audio array.
     """
+    valid_modes = {"mute", "bleep"}
+    if mode not in valid_modes:
+        raise ValueError(f"Unknown edit mode '{mode}'. Valid modes: {valid_modes}")
+
     if not flagged:
         logger.info("No flagged words to edit")
         return vocals.copy()

@@ -41,7 +41,13 @@ def separate(audio_path: Path, *, device: str = "cpu", model_name: str = "htdemu
     vocals = separated["vocals"].cpu().numpy()
     # Sum all non-vocal stems into instrumentals
     instrumental_stems = [name for name in separated if name != "vocals"]
-    instrumentals = sum(separated[name] for name in instrumental_stems).cpu().numpy()
+    if not instrumental_stems:
+        instrumentals = torch.zeros_like(separated["vocals"]).cpu().numpy()
+    else:
+        instrumentals = separated[instrumental_stems[0]]
+        for name in instrumental_stems[1:]:
+            instrumentals = instrumentals + separated[name]
+        instrumentals = instrumentals.cpu().numpy()
 
     # Convert from (channels, samples) to (samples, channels) if needed
     if vocals.ndim == 2:

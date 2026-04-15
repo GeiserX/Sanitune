@@ -6,7 +6,20 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import torch
+
+VALID_DEVICES = {"cpu", "cuda", "mps"}
+VALID_MODES = {"mute", "bleep"}
+
+
+def _parse_positive_int(name: str, default: str) -> int:
+    raw = os.environ.get(name, default)
+    try:
+        value = int(raw)
+    except ValueError:
+        raise ValueError(f"Environment variable {name}='{raw}' is not a valid integer")
+    if value <= 0:
+        raise ValueError(f"Environment variable {name}={value} must be a positive integer")
+    return value
 
 
 @dataclass
@@ -17,7 +30,7 @@ class Settings:
     model_dir: Path = field(default_factory=lambda: Path(os.environ.get("SANITUNE_MODEL_DIR", "./models")))
     max_file_size_mb: int = 200
     bleep_freq: int = 1000
-    llm_api_key: str | None = None
+    llm_api_key: str | None = field(default=None, repr=False)
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -26,8 +39,8 @@ class Settings:
             language=os.environ.get("SANITUNE_LANGUAGE", "en"),
             default_mode=os.environ.get("SANITUNE_DEFAULT_MODE", "mute"),
             model_dir=Path(os.environ.get("SANITUNE_MODEL_DIR", "./models")),
-            max_file_size_mb=int(os.environ.get("SANITUNE_MAX_FILE_SIZE", "200")),
-            bleep_freq=int(os.environ.get("SANITUNE_BLEEP_FREQ", "1000")),
+            max_file_size_mb=_parse_positive_int("SANITUNE_MAX_FILE_SIZE", "200"),
+            bleep_freq=_parse_positive_int("SANITUNE_BLEEP_FREQ", "1000"),
             llm_api_key=os.environ.get("SANITUNE_LLM_API_KEY"),
         )
 
@@ -38,7 +51,11 @@ def detect_device(requested: str = "auto") -> str:
     Priority: user override > CUDA > MPS > CPU.
     """
     if requested != "auto":
+        if requested not in VALID_DEVICES:
+            raise ValueError(f"Unknown device '{requested}'. Valid: auto, {', '.join(sorted(VALID_DEVICES))}")
         return requested
+
+    import torch
 
     if torch.cuda.is_available():
         return "cuda"
