@@ -12,6 +12,7 @@ from pathlib import Path
 from sanitune.transcriber import Word
 
 logger = logging.getLogger(__name__)
+TOKEN_STRIP_PATTERN = re.compile(r"[^\w']", re.UNICODE)
 
 
 @dataclass
@@ -25,6 +26,11 @@ def _normalize(text: str) -> str:
     """Normalize text by removing diacritics for accent-insensitive matching."""
     nfkd = unicodedata.normalize("NFKD", text)
     return "".join(c for c in nfkd if not unicodedata.combining(c)).lower()
+
+
+def clean_word(text: str) -> str:
+    """Normalize a single token for profanity matching."""
+    return TOKEN_STRIP_PATTERN.sub("", text.lower()).strip("'")
 
 
 def load_wordlist(language: str) -> set[str]:
@@ -53,6 +59,48 @@ def load_wordlist(language: str) -> set[str]:
     return words
 
 
+def build_profanity_set(
+    language: str,
+    custom_words: list[str] | None = None,
+    exclude_words: list[str] | None = None,
+) -> set[str]:
+    """Build the effective profanity set after custom additions/exclusions."""
+    profanity_set = load_wordlist(language)
+
+    if custom_words:
+        for word in custom_words:
+            lowered = word.lower()
+            profanity_set.add(lowered)
+            profanity_set.add(_normalize(lowered))
+
+    if exclude_words:
+        to_remove: set[str] = set()
+        for word in exclude_words:
+            lowered = word.lower()
+            to_remove.add(lowered)
+            to_remove.add(_normalize(lowered))
+        profanity_set -= to_remove
+
+    return profanity_set
+
+
+def match_word(text: str, profanity_set: set[str]) -> str | None:
+    """Return the matched profane term for a token, if any."""
+    cleaned = clean_word(text)
+    if not cleaned:
+        return None
+
+    cleaned_normalized = _normalize(cleaned)
+    if cleaned in profanity_set or cleaned_normalized in profanity_set:
+        return cleaned
+
+    for term in profanity_set:
+        if len(term) >= 4 and term in cleaned_normalized and cleaned_normalized != term:
+            return term
+
+    return None
+
+
 def detect(
     words: list[Word],
     *,
@@ -73,44 +121,14 @@ def detect(
     Returns:
         List of flagged words with their indices.
     """
-    profanity_set = load_wordlist(language)
-
-    if custom_words:
-        for w in custom_words:
-            lw = w.lower()
-            profanity_set.add(lw)
-            profanity_set.add(_normalize(lw))
-
-    if exclude_words:
-        to_remove: set[str] = set()
-        for w in exclude_words:
-            lw = w.lower()
-            to_remove.add(lw)
-            to_remove.add(_normalize(lw))
-        profanity_set -= to_remove
+    profanity_set = build_profanity_set(language, custom_words=custom_words, exclude_words=exclude_words)
 
     flagged = []
-    strip_pattern = re.compile(r"[^\w']", re.UNICODE)
 
     for i, word in enumerate(words):
-        cleaned = strip_pattern.sub("", word.text.lower()).strip("'")
-        if not cleaned:
-            continue
-
-        # Try both raw and accent-stripped forms
-        cleaned_normalized = _normalize(cleaned)
-
-        if cleaned in profanity_set or cleaned_normalized in profanity_set:
-            flagged.append(FlaggedWord(word=word, matched_term=cleaned, index=i))
-            continue
-
-        # Check if the word contains a profane substring (for compound words / suffixed forms)
-        # Note: this can produce false positives (e.g. "cockpit" matching "cock").
-        # The >=4 char threshold mitigates most cases. Consider word-boundary regex for v0.2.0.
-        for term in profanity_set:
-            if len(term) >= 4 and term in cleaned_normalized and cleaned_normalized != term:
-                flagged.append(FlaggedWord(word=word, matched_term=term, index=i))
-                break
+        matched_term = match_word(word.text, profanity_set)
+        if matched_term:
+            flagged.append(FlaggedWord(word=word, matched_term=matched_term, index=i))
 
     logger.info("Detected %d flagged words out of %d total", len(flagged), len(words))
     return flagged

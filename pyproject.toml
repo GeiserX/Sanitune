@@ -5,16 +5,16 @@ build-backend = "hatchling.build"
 [project]
 name = "sanitune"
 version = "0.1.0"
-description = "AI-powered song cleaning — remove or replace explicit words while preserving the original singer's voice"
+description = "AI-assisted song cleaning for Phase 1: separate vocals, detect profanity, and mute or bleep flagged words"
 readme = "README.md"
 license = "GPL-3.0-only"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.14"
 authors = [
     { name = "GeiserX", email = "9169332+GeiserX@users.noreply.github.com" },
 ]
 keywords = [
     "audio", "music", "profanity", "clean", "censor",
-    "demucs", "whisper", "voice-cloning", "rvc",
+    "demucs", "whisperx", "lyrics", "cli",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",

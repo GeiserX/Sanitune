@@ -28,7 +28,7 @@ FROM python:3.12-slim
 LABEL maintainer="GeiserX <9169332+GeiserX@users.noreply.github.com>"
 LABEL version="0.1.0"
 LABEL license="GPL-3.0-only"
-LABEL description="AI-powered song cleaning — remove or replace explicit words while preserving the original singer's voice"
+LABEL description="Phase 1 CLI for song cleaning: separate vocals, detect profanity, and mute or bleep flagged words"
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ffmpeg && \

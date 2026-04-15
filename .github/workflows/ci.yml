@@ -29,6 +29,9 @@ jobs:
       - name: Install package (no heavy ML deps)
         run: pip install --no-deps -e .
 
+      - name: Verify dependency resolution
+        run: pip install --dry-run ".[lyrics]"
+
       - name: Run tests
         run: pytest tests/ -v
 

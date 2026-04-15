@@ -34,22 +34,31 @@ Only the latest version receives security updates. We recommend always running t
 
 ### File Processing
 
-- Audio files are processed locally — no data leaves the machine
+- Audio files are processed locally and are never uploaded by the Phase 1 pipeline
 - Uploaded files are validated for format before processing
 - Temporary files are cleaned up after processing completes
 - File paths are sanitized to prevent path traversal attacks
+- Phase 1 writes output as `.wav`
 
 ### Docker Security
 
 - Container runs as non-root user
-- No network access required for core processing (models downloaded at startup)
+- The current Docker image is a CPU-only CLI container
+- Core audio processing does not require outbound network access after dependencies/models are available
+- Optional lyrics lookup and first-run model downloads may require outbound network access
 - Volumes are used for input/output only
 
 ### API Keys (Optional)
 
-- AI contextual replacement requires a user-provided LLM API key
-- Keys are never stored persistently — used for the current session only
-- Keys are never logged or transmitted to any third party
+- Optional lyrics lookup can use a user-provided `GENIUS_API_KEY`
+- Keys are never stored persistently by Sanitune
+- Keys are passed only to the selected third-party lyrics provider when that feature is explicitly used
+
+### Privacy Notes
+
+- By default, audio stays local
+- If you pass `--artist` and `--title` with lyrics extras installed, Sanitune may send song metadata to syncedlyrics and/or Genius
+- Sanitune does not send audio content to those lyrics providers
 
 ## Contact
 

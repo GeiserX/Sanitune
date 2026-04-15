@@ -11,97 +11,93 @@
 
 ---
 
-**Sanitune** creates clean versions of songs by removing or replacing explicit words using AI. Unlike simple audio bleepers, Sanitune separates vocals from instrumentals first — so when a word is removed, the music keeps playing naturally. For the ultimate clean edit, it can even replace bad words with clean alternatives **sung in the original singer's voice**.
+**Sanitune** is a Phase 1 local CLI for creating clean versions of songs. It separates vocals from instrumentals, transcribes the vocal track, detects explicit words, and then mutes or bleeps those words before remixing the song.
 
-## How It Works
+The current release is intentionally narrow:
+
+- `sanitune process` is the only shipped command
+- `mute` and `bleep` are the only supported edit modes
+- output is written as `.wav`
+- optional lyrics lookup can improve detection heuristics, but it is not required
+
+Voice replacement, a web UI, and richer self-hosting flows are planned in later phases and are tracked in `ROADMAP.md`.
+
+## How Phase 1 Works
 
 ```
 Upload Song → Separate Vocals & Instrumentals → Transcribe Lyrics
-    → Detect Profanity → Choose Action Per Word → Process → Download Clean Version
+    → Detect Profanity → Mute/Bleep Flagged Words → Remix → Write Clean WAV
 ```
 
 1. **Source separation** — [Demucs v4](https://github.com/adefossez/demucs) (Meta) isolates vocals from the instrumental track
 2. **Transcription** — [WhisperX](https://github.com/m-bain/whisperX) transcribes lyrics with precise word-level timestamps
 3. **Detection** — Configurable profanity word lists flag explicit content (English + Spanish)
-4. **Processing** — Per-word action:
-   - **Mute**: Silence the word in vocals only (instrumentals keep playing)
-   - **Bleep**: Overlay a tone on the word
-   - **Voice Replace**: AI generates the clean word in the singer's voice using [RVC](https://github.com/IAHispano/Applio)
+4. **Processing** — Flagged words are muted or replaced with a tone in the vocal track only
 5. **Remix** — Processed vocals are merged back with the untouched instrumental
 
 ## Features
 
-- **Three cleaning modes**: Mute (silence), bleep (tone), or voice replacement (AI-generated)
-- **Auto-detection**: Built-in profanity lists for English and Spanish
-- **Manual selection**: Review transcript and toggle words on/off
-- **Voice cloning**: Replace words with clean alternatives in the original singer's voice
-- **Smart replacement**: Built-in word mappings, custom overrides, or AI-contextual suggestions (BYO API key)
-- **Hardware flexible**: Runs on CPU (slower), NVIDIA GPU, Apple Silicon (MPS), or Intel iGPU
-- **Multiple interfaces**: Web UI (Gradio), CLI tool, Docker container
-- **Format support**: MP3, WAV, FLAC, AAC, OGG, AIFF, M4A (via ffmpeg)
-- **Privacy first**: All processing happens locally. No audio leaves your machine
+- **Phase 1 CLI**: `sanitune process <file>`
+- **Two edit modes**: `mute` or `bleep`
+- **Word-level editing**: WhisperX timestamps let edits target individual words instead of whole regions
+- **Built-in profanity lists**: English and Spanish wordlists with custom additions/exclusions
+- **Optional lyrics reference**: `pip install -e ".[lyrics]"` enables syncedlyrics/Genius lookup when you pass `--artist` and `--title`
+- **Hardware-aware runtime**: automatic selection of CUDA, MPS, or CPU when available
+- **Docker-friendly batch workflow**: CPU-only CLI container for one-off processing jobs
+- **Local audio processing**: audio never leaves your machine unless you explicitly enable lyrics lookup
 
 ## Quick Start
 
 ### CLI
 
 ```bash
-pip install sanitune
+python -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install -e .
 
-# Mute explicit words
+# Basic mute flow
 sanitune process song.mp3 --mode mute --language en
 
-# Replace with singer's voice
-sanitune process song.mp3 --mode replace
+# Bleep explicit words instead
+sanitune process song.mp3 --mode bleep --language es --bleep-freq 1200
 
-# Specify GPU device
-sanitune process song.mp3 --mode mute --device cuda
+# Override device or output location
+sanitune process song.mp3 --device cuda --output song_clean.wav
+
+# Raise the input size limit when needed
+sanitune process long-song.flac --max-file-size 500
 ```
 
-### Web UI
+### Optional Lyrics Lookup
 
 ```bash
-sanitune web --port 7860
-# Open http://localhost:7860
+pip install -e ".[lyrics]"
+
+sanitune process song.mp3 \
+  --artist "Artist Name" \
+  --title "Song Title"
 ```
+
+When `--artist` and `--title` are provided, Sanitune may query external lyrics providers to cross-reference the transcription. Only song metadata and optional provider API tokens are sent; audio stays local.
 
 ### Docker
 
+The current Docker image is a **CPU-only CLI container**, not a web app.
+
 ```bash
-# CPU only
-docker run -p 7860:7860 -v ./music:/data drumsergio/sanitune:0.1.0
+docker build -t sanitune-local .
 
-# NVIDIA GPU
-docker run --gpus all -p 7860:7860 -v ./music:/data drumsergio/sanitune:0.1.0
-
-# Intel iGPU
-docker run --device=/dev/dri -p 7860:7860 -v ./music:/data drumsergio/sanitune:0.1.0
+# Process a file from the current directory
+docker run --rm \
+  -v "$PWD:/work" \
+  sanitune-local process /work/song.mp3 --output /work/song_clean.wav
 ```
 
 ### Docker Compose
 
-```yaml
-services:
-  sanitune:
-    image: drumsergio/sanitune:0.1.0
-    ports:
-      - "7860:7860"
-    volumes:
-      - ./music:/data
-      - sanitune-models:/app/models
-    environment:
-      - SANITUNE_DEVICE=auto        # auto, cpu, cuda, mps
-      - SANITUNE_LANGUAGE=en        # en, es
-      - SANITUNE_DEFAULT_MODE=mute  # mute, bleep, replace
-    # Uncomment for NVIDIA GPU:
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - capabilities: [gpu]
-
-volumes:
-  sanitune-models:
+```bash
+docker compose run --rm sanitune process input/song.mp3 --output output/song_clean.wav
 ```
 
 ## Configuration
@@ -110,27 +106,23 @@ volumes:
 |---------------------|---------|-------------|
 | `SANITUNE_DEVICE` | `auto` | Processing device: `auto`, `cpu`, `cuda`, `mps` |
 | `SANITUNE_LANGUAGE` | `en` | Profanity detection language: `en`, `es` |
-| `SANITUNE_DEFAULT_MODE` | `mute` | Default cleaning mode: `mute`, `bleep`, `replace` |
-| `SANITUNE_MODEL_DIR` | `./models` | Directory for AI model storage |
+| `SANITUNE_DEFAULT_MODE` | `mute` | Default cleaning mode: `mute`, `bleep` |
 | `SANITUNE_MAX_FILE_SIZE` | `200` | Maximum upload file size in MB |
 | `SANITUNE_BLEEP_FREQ` | `1000` | Bleep tone frequency in Hz |
-| `SANITUNE_LLM_API_KEY` | — | Optional API key for AI-contextual word suggestions |
 
 ## Hardware Requirements
 
 | Mode | Minimum | Recommended |
 |------|---------|-------------|
 | Mute/Bleep | 4 GB RAM, any CPU | 8 GB RAM, 4+ cores |
-| Voice Replace | 8 GB RAM, any CPU | 16 GB RAM, GPU with 4+ GB VRAM |
 
 Processing times (per 3-minute song, approximate):
 
-| Hardware | Mute/Bleep | Voice Replace |
-|----------|-----------|---------------|
-| CPU (4 cores) | ~3 min | ~10 min |
-| NVIDIA RTX 3060 | ~30 sec | ~2 min |
-| Apple M2 | ~45 sec | ~3 min |
-| Intel iGPU (UHD 770) | ~2 min | ~5 min |
+| Hardware | Mute/Bleep |
+|----------|-------------|
+| CPU (4 cores) | ~3 min |
+| NVIDIA RTX 3060 | ~30 sec |
+| Apple M2 | ~45 sec |
 
 ## Technology
 
@@ -138,9 +130,16 @@ Processing times (per 3-minute song, approximate):
 |-----------|---------|---------|
 | Source Separation | [Demucs v4](https://github.com/adefossez/demucs) | Isolate vocals from instrumentals |
 | Transcription | [WhisperX](https://github.com/m-bain/whisperX) | Word-level lyrics transcription |
-| Voice Conversion | [RVC v2 / Applio](https://github.com/IAHispano/Applio) | Clone singer's voice for replacements |
-| Web UI | [Gradio](https://github.com/gradio-app/gradio) | Browser-based interface |
+| Optional Lyrics Lookup | [syncedlyrics](https://github.com/arran4/syncedlyrics), [lyricsgenius](https://github.com/johnwmillr/LyricsGenius) | Cross-reference lyrics when explicitly enabled |
 | Audio Processing | [pydub](https://github.com/jiaaro/pydub) + [ffmpeg](https://ffmpeg.org/) | Format conversion and manipulation |
+
+## Current Limitations
+
+- Output is written as `.wav` in Phase 1
+- There is no web UI yet
+- There is no voice replacement mode yet
+- The Docker image is CPU-only for now
+- Optional lyrics lookup requires extra dependencies and outbound network access
 
 ## Roadmap
 

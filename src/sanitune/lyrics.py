@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
@@ -90,6 +91,10 @@ def fetch_synced(artist: str, title: str) -> LyricsResult | None:
         return None
 
     synced_lines = _parse_lrc(lrc)
+    if not synced_lines:
+        logger.info("Lyrics provider returned no timed lines for '%s'", search_term)
+        return None
+
     plain_text = "\n".join(line.text for line in synced_lines)
 
     logger.info("Found synced lyrics: %d lines", len(synced_lines))
@@ -168,7 +173,7 @@ def fetch_lyrics(
     Returns:
         LyricsResult or None if no provider has the lyrics.
     """
-    providers: list[tuple[str, callable]] = []
+    providers: list[tuple[str, Callable[[], LyricsResult | None]]] = []
 
     if prefer_synced:
         providers.append(("syncedlyrics", lambda: fetch_synced(artist, title)))

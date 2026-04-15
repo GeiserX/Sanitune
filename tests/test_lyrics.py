@@ -1,10 +1,14 @@
 """Tests for the lyrics module."""
 
+from types import SimpleNamespace
+
 from sanitune.lyrics import (
     LyricsResult,
     SyncedLine,
     _parse_lrc,
     extract_profane_lines,
+    fetch_lyrics,
+    fetch_synced,
 )
 
 
@@ -85,3 +89,26 @@ def test_extract_profane_lines_case_insensitive():
     lyrics = LyricsResult(text="FUCK this\n", provider="test")
     profane = extract_profane_lines(lyrics, {"fuck"})
     assert len(profane) == 1
+
+
+def test_fetch_synced_returns_none_for_unsynced_text(monkeypatch):
+    fake_module = SimpleNamespace(search=lambda _term: "plain text without any timestamps")
+    monkeypatch.setitem(__import__("sys").modules, "syncedlyrics", fake_module)
+
+    assert fetch_synced("Artist", "Title") is None
+
+
+def test_fetch_lyrics_falls_back_when_synced_provider_has_no_timestamps(monkeypatch):
+    monkeypatch.setattr("sanitune.lyrics.fetch_synced", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        "sanitune.lyrics.fetch_genius",
+        lambda *_args, **_kwargs: LyricsResult(
+            text="Fallback lyrics",
+            provider="genius",
+        ),
+    )
+
+    result = fetch_lyrics("Artist", "Title")
+
+    assert result is not None
+    assert result.provider == "genius"

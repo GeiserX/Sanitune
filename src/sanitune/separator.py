@@ -7,8 +7,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
-import torch
-import torchaudio
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +29,8 @@ def separate(audio_path: Path, *, device: str = "cpu", model_name: str = "htdemu
     Returns:
         SeparationResult with vocals, instrumentals, and sample rate.
     """
+    import torch
+    import torchaudio
     from demucs.apply import apply_model
     from demucs.pretrained import get_model
 

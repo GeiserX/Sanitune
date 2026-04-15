@@ -9,6 +9,7 @@ from pathlib import Path
 import click
 
 from sanitune import __version__
+from sanitune.config import VALID_DEVICE_OPTIONS, VALID_MODES, Settings
 
 
 @click.group()
@@ -20,11 +21,33 @@ def main() -> None:
 @main.command()
 @click.argument("input_file", type=click.Path(exists=True, path_type=Path))
 @click.option("-o", "--output", type=click.Path(path_type=Path), default=None, help="Output file path.")
-@click.option("-m", "--mode", type=click.Choice(["mute", "bleep"]), default="mute", help="Editing mode.")
-@click.option("-l", "--language", default="en", help="Language code (en, es, ...).")
-@click.option("-d", "--device", type=click.Choice(["auto", "cpu", "cuda", "mps"]), default="auto",
-              help="Compute device.")
-@click.option("--bleep-freq", type=int, default=1000, help="Bleep tone frequency in Hz.")
+@click.option(
+    "-m",
+    "--mode",
+    type=click.Choice(sorted(VALID_MODES)),
+    default=None,
+    help="Editing mode. Defaults to SANITUNE_DEFAULT_MODE or 'mute'.",
+)
+@click.option("-l", "--language", default=None, help="Language code. Defaults to SANITUNE_LANGUAGE or 'en'.")
+@click.option(
+    "-d",
+    "--device",
+    type=click.Choice(sorted(VALID_DEVICE_OPTIONS)),
+    default=None,
+    help="Compute device. Defaults to SANITUNE_DEVICE or 'auto'.",
+)
+@click.option(
+    "--bleep-freq",
+    type=click.IntRange(min=1),
+    default=None,
+    help="Bleep tone frequency in Hz. Defaults to SANITUNE_BLEEP_FREQ or 1000.",
+)
+@click.option(
+    "--max-file-size",
+    type=click.IntRange(min=1),
+    default=None,
+    help="Maximum input file size in MB. Defaults to SANITUNE_MAX_FILE_SIZE or 200.",
+)
 @click.option("--model", "model_name", default="htdemucs_ft", help="Demucs model name.")
 @click.option("--add-word", multiple=True, help="Additional words to flag (repeatable).")
 @click.option("--exclude-word", multiple=True, help="Words to exclude from flagging (repeatable).")
@@ -35,10 +58,11 @@ def main() -> None:
 def process(
     input_file: Path,
     output: Path | None,
-    mode: str,
-    language: str,
-    device: str,
-    bleep_freq: int,
+    mode: str | None,
+    language: str | None,
+    device: str | None,
+    bleep_freq: int | None,
+    max_file_size: int | None,
     model_name: str,
     add_word: tuple[str, ...],
     exclude_word: tuple[str, ...],
@@ -54,18 +78,24 @@ def process(
         stream=sys.stderr,
     )
 
+    try:
+        settings = Settings.from_env()
+    except ValueError as err:
+        raise click.ClickException(str(err)) from err
+
     from sanitune.pipeline import process as run_pipeline
 
     result = run_pipeline(
         input_file,
         output,
-        mode=mode,
-        language=language,
-        device=device,
+        mode=settings.default_mode if mode is None else mode,
+        language=settings.language if language is None else language,
+        device=settings.device if device is None else device,
         custom_words=list(add_word) if add_word else None,
         exclude_words=list(exclude_word) if exclude_word else None,
-        bleep_freq=bleep_freq,
+        bleep_freq=settings.bleep_freq if bleep_freq is None else bleep_freq,
         model_name=model_name,
+        max_file_size_mb=settings.max_file_size_mb if max_file_size is None else max_file_size,
         artist=artist,
         title=title,
         genius_api_key=genius_api_key,

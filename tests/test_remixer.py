@@ -85,3 +85,13 @@ def test_remix_rejects_multichannel_mismatch(tmp_path):
 
     with pytest.raises(ValueError, match="Channel mismatch"):
         remix(vocals, instrumentals, sr, out)
+
+
+def test_remix_rejects_unsupported_output_extension(tmp_path):
+    sr = 16000
+    vocals = np.zeros(sr, dtype=np.float32)
+    instrumentals = np.zeros(sr, dtype=np.float32)
+    out = tmp_path / "output.m4a"
+
+    with pytest.raises(ValueError, match="Unsupported output file type"):
+        remix(vocals, instrumentals, sr, out)

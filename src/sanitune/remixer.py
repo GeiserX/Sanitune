@@ -9,6 +9,7 @@ import numpy as np
 import soundfile as sf
 
 logger = logging.getLogger(__name__)
+SUPPORTED_OUTPUT_EXTENSIONS = {".wav"}
 
 
 def remix(
@@ -33,6 +34,12 @@ def remix(
     Returns:
         Path to the written output file.
     """
+    if output_path.suffix.lower() not in SUPPORTED_OUTPUT_EXTENSIONS:
+        raise ValueError(
+            f"Unsupported output file type '{output_path.suffix}'. "
+            f"Supported: {', '.join(sorted(SUPPORTED_OUTPUT_EXTENSIONS))}"
+        )
+
     # Ensure both arrays have the same number of dimensions
     if vocals.ndim != instrumentals.ndim:
         if vocals.ndim == 1:

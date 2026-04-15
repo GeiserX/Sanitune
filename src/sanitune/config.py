@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
-from pathlib import Path
+from dataclasses import dataclass
 
 VALID_DEVICES = {"cpu", "cuda", "mps"}
+VALID_DEVICE_OPTIONS = {"auto", *VALID_DEVICES}
 VALID_MODES = {"mute", "bleep"}
 
 
@@ -21,26 +21,37 @@ def _parse_positive_int(name: str, default: str) -> int:
     return value
 
 
+def _parse_choice(name: str, default: str, valid: set[str]) -> str:
+    raw = os.environ.get(name, default).strip().lower()
+    if raw not in valid:
+        valid_values = ", ".join(sorted(valid))
+        raise ValueError(f"Environment variable {name}='{raw}' must be one of: {valid_values}")
+    return raw
+
+
+def _parse_language(name: str, default: str) -> str:
+    raw = os.environ.get(name, default).strip().lower()
+    if not raw:
+        raise ValueError(f"Environment variable {name} must not be empty")
+    return raw
+
+
 @dataclass
 class Settings:
     device: str = "auto"
     language: str = "en"
     default_mode: str = "mute"
-    model_dir: Path = field(default_factory=lambda: Path(os.environ.get("SANITUNE_MODEL_DIR", "./models")))
     max_file_size_mb: int = 200
     bleep_freq: int = 1000
-    llm_api_key: str | None = field(default=None, repr=False)
 
     @classmethod
     def from_env(cls) -> Settings:
         return cls(
-            device=os.environ.get("SANITUNE_DEVICE", "auto"),
-            language=os.environ.get("SANITUNE_LANGUAGE", "en"),
-            default_mode=os.environ.get("SANITUNE_DEFAULT_MODE", "mute"),
-            model_dir=Path(os.environ.get("SANITUNE_MODEL_DIR", "./models")),
+            device=_parse_choice("SANITUNE_DEVICE", "auto", VALID_DEVICE_OPTIONS),
+            language=_parse_language("SANITUNE_LANGUAGE", "en"),
+            default_mode=_parse_choice("SANITUNE_DEFAULT_MODE", "mute", VALID_MODES),
             max_file_size_mb=_parse_positive_int("SANITUNE_MAX_FILE_SIZE", "200"),
             bleep_freq=_parse_positive_int("SANITUNE_BLEEP_FREQ", "1000"),
-            llm_api_key=os.environ.get("SANITUNE_LLM_API_KEY"),
         )
 
 
