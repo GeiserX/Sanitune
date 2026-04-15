@@ -131,7 +131,7 @@ Processing times (per 3-minute song, approximate):
 | Source Separation | [Demucs v4](https://github.com/adefossez/demucs) | Isolate vocals from instrumentals |
 | Transcription | [WhisperX](https://github.com/m-bain/whisperX) | Word-level lyrics transcription |
 | Optional Lyrics Lookup | [syncedlyrics](https://github.com/arran4/syncedlyrics), [lyricsgenius](https://github.com/johnwmillr/LyricsGenius) | Cross-reference lyrics when explicitly enabled |
-| Audio Processing | [pydub](https://github.com/jiaaro/pydub) + [ffmpeg](https://ffmpeg.org/) | Format conversion and manipulation |
+| Audio I/O | [soundfile](https://github.com/bastibe/python-soundfile) + [ffmpeg](https://ffmpeg.org/) | Audio reading and writing |
 
 ## Current Limitations
 
