@@ -1,0 +1,39 @@
+# Lista de palabras malsonantes en español para Sanitune
+# Las líneas que empiezan con # son comentarios
+# Una palabra por línea, sin distinción de mayúsculas
+
+cabron
+cabrón
+capullo
+carajo
+chocho
+chupapollas
+cojon
+cojón
+cojones
+coño
+estupido
+estúpido
+follar
+gilipollas
+hijoputa
+hostia
+joder
+mamabicho
+mamón
+marica
+maricón
+mear
+mierda
+pajero
+pedo
+pendejo
+picha
+pito
+polla
+pollas
+puta
+putada
+puto
+verga
+zorra
