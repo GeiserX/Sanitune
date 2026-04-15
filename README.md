@@ -3,9 +3,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GeiserX/sanitune/blob/main/LICENSE"><img src="https://img.shields.io/github/license/GeiserX/sanitune" alt="License"></a>
-  <a href="https://github.com/GeiserX/sanitune/releases"><img src="https://img.shields.io/github/v/release/GeiserX/sanitune" alt="Release"></a>
-  <a href="https://github.com/GeiserX/sanitune/stargazers"><img src="https://img.shields.io/github/stars/GeiserX/sanitune" alt="Stars"></a>
+  <a href="https://github.com/GeiserX/Sanitune/blob/main/LICENSE"><img src="https://img.shields.io/github/license/GeiserX/Sanitune" alt="License"></a>
+  <a href="https://github.com/GeiserX/Sanitune/releases"><img src="https://img.shields.io/github/v/release/GeiserX/Sanitune" alt="Release"></a>
+  <a href="https://github.com/GeiserX/Sanitune/stargazers"><img src="https://img.shields.io/github/stars/GeiserX/Sanitune" alt="Stars"></a>
   <a href="https://hub.docker.com/r/drumsergio/sanitune"><img src="https://img.shields.io/docker/pulls/drumsergio/sanitune" alt="Docker Pulls"></a>
 </p>
 

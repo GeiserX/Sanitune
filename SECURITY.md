@@ -8,7 +8,7 @@ Sanitune processes audio files locally. While it doesn't handle authentication o
 
 Instead, please use GitHub's private vulnerability reporting:
 
-1. Go to https://github.com/GeiserX/sanitune/security/advisories
+1. Go to https://github.com/GeiserX/Sanitune/security/advisories
 2. Click "Report a vulnerability"
 3. Fill out the form with details
 

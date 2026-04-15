@@ -1,0 +1,35 @@
+# English profanity word list for Sanitune
+# Lines starting with # are comments
+# One word per line, case-insensitive
+
+ass
+asshole
+bastard
+bitch
+bloody
+bollocks
+bullshit
+cock
+crap
+cunt
+damn
+dick
+douche
+fag
+fuck
+goddamn
+hell
+hoe
+jackass
+jerk
+motherfucker
+nigga
+nigger
+piss
+prick
+pussy
+shit
+slut
+twat
+wanker
+whore

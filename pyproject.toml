@@ -1,0 +1,67 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sanitune"
+version = "0.1.0"
+description = "AI-powered song cleaning — remove or replace explicit words while preserving the original singer's voice"
+readme = "README.md"
+license = "GPL-3.0-only"
+requires-python = ">=3.11"
+authors = [
+    { name = "GeiserX", email = "9169332+GeiserX@users.noreply.github.com" },
+]
+keywords = [
+    "audio", "music", "profanity", "clean", "censor",
+    "demucs", "whisper", "voice-cloning", "rvc",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+]
+dependencies = [
+    "torch>=2.1.0",
+    "torchaudio>=2.1.0",
+    "demucs>=4.0.0",
+    "whisperx>=3.1.0",
+    "pydub>=0.25.1",
+    "soundfile>=0.12.1",
+    "numpy>=1.24.0",
+    "click>=8.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.4.0",
+]
+
+[project.scripts]
+sanitune = "sanitune.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/GeiserX/Sanitune"
+Repository = "https://github.com/GeiserX/Sanitune"
+Issues = "https://github.com/GeiserX/Sanitune/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sanitune"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
