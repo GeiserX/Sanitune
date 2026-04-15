@@ -35,10 +35,10 @@ def load_wordlist(language: str) -> set[str]:
     try:
         ref = resources.files("sanitune.wordlists").joinpath(f"{language}.txt")
         text = ref.read_text(encoding="utf-8")
-    except (FileNotFoundError, TypeError):
+    except (FileNotFoundError, TypeError) as err:
         wordlist_path = Path(__file__).parent / "wordlists" / f"{language}.txt"
         if not wordlist_path.exists():
-            raise FileNotFoundError(f"No wordlist found for language '{language}'")
+            raise FileNotFoundError(f"No wordlist found for language '{language}'") from err
         text = wordlist_path.read_text(encoding="utf-8")
 
     words = set()

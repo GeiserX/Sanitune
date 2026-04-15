@@ -43,12 +43,17 @@ def remix(
     # Match channel counts
     if vocals.ndim == 2 and instrumentals.ndim == 2:
         if vocals.shape[1] != instrumentals.shape[1]:
-            # Convert to common channel count (stereo)
-            target_channels = max(vocals.shape[1], instrumentals.shape[1])
-            if vocals.shape[1] == 1:
-                vocals = np.tile(vocals, (1, target_channels))
-            if instrumentals.shape[1] == 1:
-                instrumentals = np.tile(instrumentals, (1, target_channels))
+            vocal_ch = vocals.shape[1]
+            instr_ch = instrumentals.shape[1]
+            if vocal_ch == 1:
+                vocals = np.tile(vocals, (1, instr_ch))
+            elif instr_ch == 1:
+                instrumentals = np.tile(instrumentals, (1, vocal_ch))
+            else:
+                raise ValueError(
+                    f"Channel mismatch: vocals={vocal_ch}, instrumentals={instr_ch}. "
+                    "Only mono-to-multichannel upmix is supported."
+                )
 
     # Pad shorter track with silence
     len_diff = len(vocals) - len(instrumentals)
