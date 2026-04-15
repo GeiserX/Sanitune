@@ -104,6 +104,13 @@ def _spectral_smooth(
     return result
 
 
+def _clamp_bounds(start_s: float, end_s: float, sample_rate: int, total: int) -> tuple[int, int]:
+    """Clamp float timestamps to valid sample indices."""
+    start = max(0, min(total, int(start_s * sample_rate)))
+    end = max(start, min(total, int(end_s * sample_rate)))
+    return start, end
+
+
 def generate_replacement(
     flagged_word: FlaggedWord,
     vocals: np.ndarray,
@@ -139,8 +146,9 @@ def generate_replacement(
         return None
 
     # Step 2: Extract original word segment for reference
-    start_sample = int(flagged_word.word.start * sample_rate)
-    end_sample = int(flagged_word.word.end * sample_rate)
+    start_sample, end_sample = _clamp_bounds(
+        flagged_word.word.start, flagged_word.word.end, sample_rate, len(vocals),
+    )
     original_segment = vocals[start_sample:end_sample]
 
     if len(original_segment) == 0:
@@ -260,8 +268,10 @@ def replace_words(
             language=language, tts_voice=tts_voice,
         )
 
-        start = int(fw.word.start * sample_rate)
-        end = int(fw.word.end * sample_rate)
+        start, end = _clamp_bounds(fw.word.start, fw.word.end, sample_rate, len(result))
+
+        if start >= end:
+            continue
 
         if replacement is not None:
             result[start:end] = replacement

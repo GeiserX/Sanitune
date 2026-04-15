@@ -105,8 +105,11 @@ def synthesize(
             ],
             capture_output=True,
             check=True,
+            timeout=30,
         )
         data, sr = sf.read(io.BytesIO(proc.stdout), dtype="float32")
+    except (subprocess.SubprocessError, OSError) as exc:
+        raise RuntimeError(f"TTS audio conversion failed for '{text}': {exc}") from exc
     finally:
         mp3_path.unlink(missing_ok=True)
 

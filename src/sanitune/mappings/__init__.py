@@ -21,14 +21,15 @@ def load_mapping(language: str, custom_mapping_path: Path | None = None) -> dict
         Dictionary mapping profane words (lowercase) to clean replacements.
     """
     mapping: dict[str, str] = {}
+    lang = language.strip().lower()
 
     # Load built-in mapping
     try:
-        builtin = files("sanitune.mappings").joinpath(f"{language}.json")
+        builtin = files("sanitune.mappings").joinpath(f"{lang}.json")
         mapping = json.loads(builtin.read_text(encoding="utf-8"))
-        logger.debug("Loaded %d built-in mappings for '%s'", len(mapping), language)
+        logger.debug("Loaded %d built-in mappings for '%s'", len(mapping), lang)
     except FileNotFoundError:
-        logger.warning("No built-in mapping for language '%s', trying 'en'", language)
+        logger.warning("No built-in mapping for language '%s', trying 'en'", lang)
         try:
             fallback = files("sanitune.mappings").joinpath("en.json")
             mapping = json.loads(fallback.read_text(encoding="utf-8"))
@@ -37,8 +38,17 @@ def load_mapping(language: str, custom_mapping_path: Path | None = None) -> dict
 
     # Overlay custom mapping
     if custom_mapping_path is not None:
-        with open(custom_mapping_path, encoding="utf-8") as f:
-            custom = json.load(f)
+        try:
+            with custom_mapping_path.open(encoding="utf-8") as f:
+                custom = json.load(f)
+        except (OSError, json.JSONDecodeError) as err:
+            raise ValueError(f"Invalid custom mapping file: {custom_mapping_path}") from err
+
+        if not isinstance(custom, dict):
+            raise ValueError("Custom mapping must be a JSON object of string-to-string pairs")
+        if any(not isinstance(k, str) or not isinstance(v, str) for k, v in custom.items()):
+            raise ValueError("Custom mapping must contain only string keys and string values")
+
         mapping.update(custom)
         logger.debug("Loaded %d custom mappings from %s", len(custom), custom_mapping_path)
 

@@ -57,7 +57,7 @@ def main() -> None:
 @click.option(
     "--mapping",
     "custom_mapping",
-    type=click.Path(exists=True, path_type=Path),
+    type=click.Path(exists=True, dir_okay=False, readable=True, path_type=Path),
     default=None,
     help="Custom replacement word mapping JSON file (for replace mode).",
 )
