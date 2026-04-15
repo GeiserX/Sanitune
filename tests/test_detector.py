@@ -104,3 +104,27 @@ def test_detect_pito_in_spanish():
     flagged = detect(words, language="es")
     assert len(flagged) == 1
     assert flagged[0].matched_term == "pito"
+
+
+def test_detect_unsupported_language_raises():
+    with pytest.raises(FileNotFoundError, match="No wordlist found"):
+        load_wordlist("xx")
+
+
+def test_detect_empty_words_list():
+    flagged = detect([])
+    assert len(flagged) == 0
+
+
+def test_detect_word_all_punctuation():
+    words = [Word(text="!!!", start=0.0, end=0.5)]
+    flagged = detect(words)
+    assert len(flagged) == 0
+
+
+def test_detect_short_term_not_matched_as_substring():
+    """Short profane terms (<4 chars) should not match as substrings."""
+    words = [Word(text="class", start=0.0, end=0.5)]
+    flagged = detect(words, custom_words=["ass"])
+    # "ass" is 3 chars, so substring match threshold (>=4) should prevent matching "class"
+    assert len(flagged) == 0

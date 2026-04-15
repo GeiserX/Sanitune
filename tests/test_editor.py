@@ -84,3 +84,43 @@ def test_edit_rejects_invalid_mode():
 
     with pytest.raises(ValueError, match="Unknown edit mode"):
         edit(audio, sr, flagged, mode="Mute")
+
+
+def test_edit_bleep_stereo_audio():
+    sr = 16000
+    audio = np.zeros((sr, 2), dtype=np.float32)
+    flagged = [_make_flagged("shit", 0.3, 0.5)]
+
+    result = edit(audio, sr, flagged, mode="bleep", bleep_freq=1000, margin_ms=0)
+
+    start = int(0.3 * sr)
+    end = int(0.5 * sr)
+    assert result.shape == audio.shape
+    assert np.abs(result[start:end]).max() > 0
+
+
+def test_edit_margin_expands_region():
+    sr = 16000
+    audio = np.ones(sr, dtype=np.float32)
+    flagged = [_make_flagged("damn", 0.5, 0.6)]
+
+    result = edit(audio, sr, flagged, mode="mute", margin_ms=100)
+
+    # With 100ms margin, silence should extend beyond 0.5-0.6s
+    margin_samples = int(sr * 100 / 1000)
+    before_margin = int(0.5 * sr) - margin_samples
+    assert result[before_margin + 1] == 0.0
+    assert result[0] != 0.0  # start of audio should be untouched
+
+
+def test_edit_flagged_at_audio_boundary():
+    sr = 16000
+    audio = np.ones(sr, dtype=np.float32)
+    # Word at the very start
+    flagged = [_make_flagged("fuck", 0.0, 0.1)]
+
+    result = edit(audio, sr, flagged, mode="mute", margin_ms=50)
+
+    # Should not crash due to negative index clamping
+    assert result[0] == 0.0
+    assert result.shape == audio.shape
