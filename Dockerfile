@@ -4,7 +4,7 @@
 FROM python:3.12-slim AS builder
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends build-essential && \
+    apt-get install -y --no-install-recommends build-essential git && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
@@ -13,7 +13,10 @@ WORKDIR /build
 COPY pyproject.toml README.md LICENSE ./
 RUN mkdir -p src/sanitune && \
     echo '__version__ = "0.2.0"' > src/sanitune/__init__.py && \
-    pip install --no-cache-dir ".[lyrics,replace]"
+    pip install --no-cache-dir ".[lyrics,voice]"
+
+# Clone Seed-VC for singing voice conversion (GPL-3.0, archived but stable)
+RUN git clone --depth 1 https://github.com/Plachtaa/seed-vc.git /opt/seed-vc
 
 # Swap CUDA torch packages for CPU-only builds (same base versions, much smaller)
 # Strip +cuXXX suffix — CPU index uses +cpu for the same base version
@@ -47,6 +50,10 @@ RUN apt-get update && \
 # Copy installed Python packages from builder
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy Seed-VC for singing voice conversion
+COPY --from=builder /opt/seed-vc /opt/seed-vc
+ENV PYTHONPATH="/opt/seed-vc:${PYTHONPATH}"
 
 WORKDIR /app
 

@@ -119,11 +119,17 @@ def generate_replacement(
     language: str = "en",
     *,
     tts_voice: str | None = None,
+    reference_audio: np.ndarray | None = None,
+    device: str = "cpu",
 ) -> np.ndarray | None:
     """Generate replacement audio for a single flagged word.
 
-    Orchestrates: mapping lookup -> TTS -> time stretch -> pitch match ->
-    loudness match -> spectral smoothing.
+    Pipeline: mapping lookup → TTS → pitch match → voice conversion (Seed-VC)
+    → time stretch → loudness match → spectral smoothing.
+
+    If Seed-VC is available and reference_audio is provided, the TTS output
+    is converted to match the singer's voice timbre. Otherwise falls back
+    to pitch-shifted TTS.
 
     Args:
         flagged_word: The word to replace.
@@ -132,6 +138,8 @@ def generate_replacement(
         mapping: Profanity-to-clean-word dictionary.
         language: Language code for TTS voice selection.
         tts_voice: Override TTS voice name.
+        reference_audio: Mono float32 reference clip of the singer's voice for Seed-VC.
+        device: Compute device for voice conversion.
 
     Returns:
         Replacement audio array matching the original's duration and shape,
@@ -174,29 +182,56 @@ def generate_replacement(
         logger.warning("TTS failed for '%s': %s — falling back to mute", replacement_text, exc)
         return None
 
-    # Step 4: Time-stretch to match original duration
-    tts_audio = _time_stretch(tts_audio, original_duration, sample_rate)
-
-    # Step 5: Pitch matching — shift TTS to match singer's pitch
+    # Step 4: Pitch matching — shift TTS to approximate singer's pitch
+    # (Seed-VC preserves this F0 via f0_condition, so pre-matching helps)
+    semitones_shift = 0.0
     try:
         orig_f0 = _extract_median_f0(original_mono.astype(np.float32), sample_rate)
         tts_f0 = _extract_median_f0(tts_audio.astype(np.float32), sample_rate)
 
         if orig_f0 > 0 and tts_f0 > 0:
-            semitones = 12 * np.log2(orig_f0 / tts_f0)
-            tts_audio = _pitch_shift(tts_audio, float(semitones), sample_rate)
+            semitones_shift = 12 * np.log2(orig_f0 / tts_f0)
+            tts_audio = _pitch_shift(tts_audio, float(semitones_shift), sample_rate)
             logger.debug(
                 "Pitch-shifted '%s': %.1f Hz → %.1f Hz (%.1f st)",
-                replacement_text, tts_f0, orig_f0, semitones,
+                replacement_text, tts_f0, orig_f0, semitones_shift,
             )
     except Exception as exc:
         logger.debug("Pitch matching failed for '%s': %s, skipping", replacement_text, exc)
 
-    # Step 6: Match loudness
+    # Step 5: Voice conversion via Seed-VC (if available)
+    # Converts TTS timbre to match the singer's voice
+    if reference_audio is not None:
+        try:
+            from sanitune.voice_converter import convert_voice, is_available
+
+            if is_available():
+                logger.debug("Converting voice for '%s' via Seed-VC...", replacement_text)
+                tts_audio = convert_voice(
+                    tts_audio,
+                    reference_audio,
+                    sample_rate,
+                    device=device,
+                    diffusion_steps=30,
+                    f0_condition=True,
+                    auto_f0_adjust=False,
+                    pitch_shift=0,
+                )
+                logger.debug("Voice conversion complete for '%s'", replacement_text)
+        except Exception as exc:
+            logger.warning(
+                "Voice conversion failed for '%s': %s — using pitch-shifted TTS",
+                replacement_text, exc,
+            )
+
+    # Step 6: Time-stretch to match original duration
+    tts_audio = _time_stretch(tts_audio, original_duration, sample_rate)
+
+    # Step 7: Match loudness
     orig_rms = float(np.sqrt(np.mean(original_mono**2)))
     tts_audio = _match_loudness(tts_audio, orig_rms)
 
-    # Step 7: Spectral smoothing at boundaries
+    # Step 8: Spectral smoothing at boundaries
     context_samples = int(sample_rate * 0.05)  # 50ms context
     pre_start = max(0, start_sample - context_samples)
     post_end = min(len(vocals), end_sample + context_samples)
@@ -210,14 +245,14 @@ def generate_replacement(
 
     tts_audio = _spectral_smooth(tts_audio, pre_context, post_context, sample_rate)
 
-    # Step 8: Ensure exact length match
+    # Step 9: Ensure exact length match
     target_len = end_sample - start_sample
     if len(tts_audio) > target_len:
         tts_audio = tts_audio[:target_len]
     elif len(tts_audio) < target_len:
         tts_audio = np.pad(tts_audio, (0, target_len - len(tts_audio)))
 
-    # Step 9: Match channel layout
+    # Step 10: Match channel layout
     if vocals.ndim == 2:
         channels = vocals.shape[1]
         tts_audio = np.tile(tts_audio[:, np.newaxis], (1, channels))
@@ -239,9 +274,12 @@ def replace_words(
     margin_ms: int = 50,
     custom_mapping_path: Path | None = None,
     tts_voice: str | None = None,
+    device: str = "cpu",
 ) -> tuple[np.ndarray, int, int]:
     """Replace flagged words in the vocal track with clean alternatives.
 
+    If Seed-VC is available, extracts a reference clip from the singer's
+    clean vocals and uses voice conversion for natural-sounding replacements.
     Words without a mapping entry are muted as a fallback.
 
     Args:
@@ -252,6 +290,7 @@ def replace_words(
         margin_ms: Extra margin in ms around each word.
         custom_mapping_path: Optional custom mapping JSON file.
         tts_voice: Override TTS voice.
+        device: Compute device for voice conversion.
 
     Returns:
         Tuple of (edited_vocals, replaced_count, muted_fallback_count).
@@ -265,10 +304,26 @@ def replace_words(
     muted_fallback = 0
     margin_samples = int(sample_rate * margin_ms / 1000)
 
+    # Extract singer's reference audio for voice conversion (once per song)
+    reference_audio = None
+    try:
+        from sanitune.voice_converter import extract_reference, is_available
+
+        if is_available():
+            flagged_regions = [(fw.word.start, fw.word.end) for fw in flagged]
+            reference_audio = extract_reference(vocals, sample_rate, flagged_regions)
+            logger.info(
+                "Extracted %.1fs reference audio for voice conversion",
+                len(reference_audio) / sample_rate,
+            )
+    except ImportError:
+        logger.debug("Seed-VC not available, using TTS-only replacement")
+
     for fw in flagged:
         replacement = generate_replacement(
             fw, vocals, sample_rate, mapping,
             language=language, tts_voice=tts_voice,
+            reference_audio=reference_audio, device=device,
         )
 
         start, end = _clamp_bounds(fw.word.start, fw.word.end, sample_rate, len(result))

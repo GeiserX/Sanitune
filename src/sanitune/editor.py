@@ -57,6 +57,7 @@ def edit(
     language: str = "en",
     custom_mapping_path: Path | None = None,
     tts_voice: str | None = None,
+    device: str = "cpu",
 ) -> np.ndarray:
     """Edit vocal track by muting, bleeping, or replacing flagged words.
 
@@ -92,6 +93,7 @@ def edit(
             margin_ms=margin_ms,
             custom_mapping_path=custom_mapping_path,
             tts_voice=tts_voice,
+            device=device,
         )
         logger.info(
             "Edited %d words using 'replace' mode (%d replaced, %d muted fallback)",

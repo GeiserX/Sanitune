@@ -202,6 +202,7 @@ def process(
         language=resolved_language,
         custom_mapping_path=custom_mapping_path,
         tts_voice=tts_voice,
+        device=resolved_device,
     )
 
     logger.info("[5/5] Remixing...")
