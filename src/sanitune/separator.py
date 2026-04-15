@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+import torchaudio
 
 logger = logging.getLogger(__name__)
 
@@ -30,36 +31,37 @@ def separate(audio_path: Path, *, device: str = "cpu", model_name: str = "htdemu
     Returns:
         SeparationResult with vocals, instrumentals, and sample rate.
     """
-    from demucs.api import Separator
+    from demucs.apply import apply_model
+    from demucs.pretrained import get_model
 
     logger.info("Separating vocals from instrumentals with %s on %s...", model_name, device)
 
-    sep = Separator(model=model_name, device=torch.device(device))
-    _, separated = sep.separate_audio_file(str(audio_path))
+    model = get_model(model_name)
+    model.to(torch.device(device))
+    sr = model.samplerate
 
-    sr = sep.samplerate
-    vocals = separated["vocals"].cpu().numpy()
-    # Sum all non-vocal stems into instrumentals
-    instrumental_stems = [name for name in separated if name != "vocals"]
-    if not instrumental_stems:
-        instrumentals = torch.zeros_like(separated["vocals"]).cpu().numpy()
+    # Load and resample audio to model's expected sample rate
+    wav, orig_sr = torchaudio.load(str(audio_path))
+    if orig_sr != sr:
+        logger.info("Resampling from %d to %d Hz...", orig_sr, sr)
+        wav = torchaudio.transforms.Resample(orig_sr, sr)(wav)
+
+    # apply_model expects (batch, channels, samples) → returns (batch, sources, channels, samples)
+    sources = apply_model(model, wav[None], device=torch.device(device))
+
+    # Extract vocals and sum remaining stems as instrumentals
+    vocal_idx = model.sources.index("vocals")
+    vocals = sources[0, vocal_idx].cpu().numpy()  # (channels, samples)
+
+    non_vocal_indices = [i for i, name in enumerate(model.sources) if name != "vocals"]
+    if not non_vocal_indices:
+        instrumentals = np.zeros_like(vocals)
     else:
-        instrumentals = separated[instrumental_stems[0]]
-        for name in instrumental_stems[1:]:
-            instrumentals = instrumentals + separated[name]
-        instrumentals = instrumentals.cpu().numpy()
+        instrumentals = sources[0, non_vocal_indices].sum(dim=0).cpu().numpy()
 
-    # Convert from (channels, samples) to (samples, channels) if needed
-    if vocals.ndim == 2:
-        vocals = vocals.T
-    elif vocals.ndim == 3:
-        # Demucs returns (batch, channels, samples)
-        vocals = vocals.squeeze(0).T
-
-    if instrumentals.ndim == 2:
-        instrumentals = instrumentals.T
-    elif instrumentals.ndim == 3:
-        instrumentals = instrumentals.squeeze(0).T
+    # Convert from (channels, samples) to (samples, channels)
+    vocals = vocals.T
+    instrumentals = instrumentals.T
 
     logger.info("Separation complete. Vocals: %s, Instrumentals: %s, SR: %d", vocals.shape, instrumentals.shape, sr)
     return SeparationResult(vocals=vocals, instrumentals=instrumentals, sample_rate=sr)
