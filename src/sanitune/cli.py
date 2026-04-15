@@ -27,6 +27,9 @@ def main() -> None:
 @click.option("--model", "model_name", default="htdemucs_ft", help="Demucs model name.")
 @click.option("--add-word", multiple=True, help="Additional words to flag (repeatable).")
 @click.option("--exclude-word", multiple=True, help="Words to exclude from flagging (repeatable).")
+@click.option("--artist", default=None, help="Artist name for lyrics lookup.")
+@click.option("--title", default=None, help="Song title for lyrics lookup.")
+@click.option("--genius-api-key", envvar="GENIUS_API_KEY", default=None, help="Genius API key for lyrics.")
 @click.option("-v", "--verbose", is_flag=True, help="Enable verbose logging.")
 def process(
     input_file: Path,
@@ -38,6 +41,9 @@ def process(
     model_name: str,
     add_word: tuple[str, ...],
     exclude_word: tuple[str, ...],
+    artist: str | None,
+    title: str | None,
+    genius_api_key: str | None,
     verbose: bool,
 ) -> None:
     """Process an audio file to remove explicit content."""
@@ -59,6 +65,9 @@ def process(
         exclude_words=list(exclude_word) if exclude_word else None,
         bleep_freq=bleep_freq,
         model_name=model_name,
+        artist=artist,
+        title=title,
+        genius_api_key=genius_api_key,
     )
 
     click.echo(f"Output: {result.output_path}")

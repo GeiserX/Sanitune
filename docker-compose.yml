@@ -1,0 +1,12 @@
+services:
+  sanitune:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./input:/app/input
+      - ./output:/app/output
+    environment:
+      - SANITUNE_DEVICE=cpu
+    # Example: process a file from the input directory
+    # docker compose run sanitune process input/song.mp3 --output output/

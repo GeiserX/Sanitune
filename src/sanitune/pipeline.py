@@ -40,6 +40,9 @@ def process(
     bleep_freq: int = 1000,
     model_name: str = "htdemucs_ft",
     max_file_size_mb: int = 200,
+    artist: str | None = None,
+    title: str | None = None,
+    genius_api_key: str | None = None,
 ) -> PipelineResult:
     """Run the full Sanitune pipeline on an audio file.
 
@@ -53,6 +56,9 @@ def process(
         exclude_words: Words to skip even if in word list.
         bleep_freq: Frequency for bleep tone in Hz.
         model_name: Demucs model name.
+        artist: Artist name for lyrics lookup (optional).
+        title: Song title for lyrics lookup (optional).
+        genius_api_key: Genius API key for lyrics (optional).
 
     Returns:
         PipelineResult with output path, flagged words, and timing.
@@ -95,6 +101,31 @@ def process(
         device=resolved_device,
         language=language,
     )
+
+    # Step 2.5 (optional): Cross-reference with official lyrics
+    lyrics_words: list[str] = []
+    if artist and title:
+        try:
+            from sanitune.lyrics import fetch_lyrics
+
+            logger.info("[2.5/5] Fetching lyrics for '%s - %s'...", artist, title)
+            lyrics_result = fetch_lyrics(artist, title, genius_api_key=genius_api_key)
+            if lyrics_result:
+                lyrics_words = lyrics_result.words
+                logger.info("Found %d words in official lyrics (provider: %s)", len(lyrics_words), lyrics_result.provider)
+            else:
+                logger.info("No lyrics found, continuing with transcription only")
+        except ImportError:
+            logger.info("Lyrics providers not installed (pip install sanitune[lyrics]), skipping")
+
+    # Merge lyrics-only profane words into custom_words for detection
+    if lyrics_words:
+        from sanitune.detector import load_wordlist
+
+        profanity_set = load_wordlist(language)
+        lyrics_profane = {w for w in lyrics_words if w in profanity_set}
+        if lyrics_profane:
+            logger.info("Lyrics confirm %d profane words: %s", len(lyrics_profane), lyrics_profane)
 
     # Step 3: Detect profanity
     logger.info("[3/5] Detecting profanity...")
