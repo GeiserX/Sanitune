@@ -6,7 +6,6 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
-
 VALID_DEVICES = {"cpu", "cuda", "mps"}
 VALID_MODES = {"mute", "bleep"}
 

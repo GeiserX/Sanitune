@@ -6,8 +6,6 @@ which fails fast on validation before reaching ML code.
 """
 
 import pytest
-from pathlib import Path
-
 
 # Can't import pipeline directly (torch dependency), so test via subprocess or
 # test the validation functions indirectly. For now, test the validation behaviors

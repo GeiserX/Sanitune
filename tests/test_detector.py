@@ -2,7 +2,7 @@
 
 import pytest
 
-from sanitune.detector import FlaggedWord, detect, load_wordlist
+from sanitune.detector import detect, load_wordlist
 from sanitune.transcriber import Word
 
 

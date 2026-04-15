@@ -22,7 +22,8 @@ def main() -> None:
 @click.option("-o", "--output", type=click.Path(path_type=Path), default=None, help="Output file path.")
 @click.option("-m", "--mode", type=click.Choice(["mute", "bleep"]), default="mute", help="Editing mode.")
 @click.option("-l", "--language", default="en", help="Language code (en, es, ...).")
-@click.option("-d", "--device", type=click.Choice(["auto", "cpu", "cuda", "mps"]), default="auto", help="Compute device.")
+@click.option("-d", "--device", type=click.Choice(["auto", "cpu", "cuda", "mps"]), default="auto",
+              help="Compute device.")
 @click.option("--bleep-freq", type=int, default=1000, help="Bleep tone frequency in Hz.")
 @click.option("--model", "model_name", default="htdemucs_ft", help="Demucs model name.")
 @click.option("--add-word", multiple=True, help="Additional words to flag (repeatable).")

@@ -112,7 +112,8 @@ def process(
             lyrics_result = fetch_lyrics(artist, title, genius_api_key=genius_api_key)
             if lyrics_result:
                 lyrics_words = lyrics_result.words
-                logger.info("Found %d words in official lyrics (provider: %s)", len(lyrics_words), lyrics_result.provider)
+                logger.info("Found %d words in official lyrics (provider: %s)",
+                            len(lyrics_words), lyrics_result.provider)
             else:
                 logger.info("No lyrics found, continuing with transcription only")
         except ImportError:
