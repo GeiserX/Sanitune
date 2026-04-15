@@ -20,11 +20,14 @@ RUN git clone --depth 1 https://github.com/Plachtaa/seed-vc.git /opt/seed-vc
 
 # Swap CUDA torch packages for CPU-only builds (same base versions, much smaller)
 # Strip +cuXXX suffix — CPU index uses +cpu for the same base version
+# Only swap packages that are actually installed (torchvision may not be present)
 RUN TORCH_VER=$(python -c "import torch; print(torch.__version__.split('+')[0])") && \
     AUDIO_VER=$(python -c "import torchaudio; print(torchaudio.__version__.split('+')[0])") && \
-    VISION_VER=$(python -c "import torchvision; print(torchvision.__version__.split('+')[0])") && \
+    PKGS="torch==${TORCH_VER} torchaudio==${AUDIO_VER}" && \
+    VISION_VER=$(python -c "import torchvision; print(torchvision.__version__.split('+')[0])" 2>/dev/null) && \
+    PKGS="${PKGS} torchvision==${VISION_VER}" || true && \
     pip install --no-cache-dir --force-reinstall --no-deps \
-        "torch==${TORCH_VER}" "torchaudio==${AUDIO_VER}" "torchvision==${VISION_VER}" \
+        ${PKGS} \
         --index-url https://download.pytorch.org/whl/cpu
 
 # Remove leftover CUDA packages
@@ -53,7 +56,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy Seed-VC for singing voice conversion
 COPY --from=builder /opt/seed-vc /opt/seed-vc
-ENV PYTHONPATH="/opt/seed-vc:${PYTHONPATH}"
+ENV PYTHONPATH="/opt/seed-vc"
 
 WORKDIR /app
 
