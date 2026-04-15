@@ -11,7 +11,7 @@ from pathlib import Path
 from sanitune.config import Settings, detect_device
 from sanitune.detector import FlaggedWord, build_profanity_set, clean_word, detect, match_word
 from sanitune.editor import edit
-from sanitune.remixer import remix
+from sanitune.remixer import SUPPORTED_OUTPUT_EXTENSIONS, detect_audio_format, remix
 from sanitune.separator import separate
 from sanitune.transcriber import TranscriptionResult, Word, transcribe
 
@@ -27,7 +27,6 @@ class PipelineResult:
 
 
 SUPPORTED_INPUT_EXTENSIONS = {".wav", ".mp3", ".flac", ".ogg", ".m4a", ".aac", ".wma", ".opus"}
-SUPPORTED_OUTPUT_EXTENSIONS = {".wav"}
 
 
 def _merge_lyrics_reference_flags(
@@ -114,8 +113,14 @@ def process(
             f"{resolved_max_file_size_mb} MB limit. Set --max-file-size or SANITUNE_MAX_FILE_SIZE to override."
         )
 
+    # Detect input format for preservation
+    input_format = detect_audio_format(input_path)
+
     if output_path is None:
-        output_path = input_path.with_name(f"{input_path.stem}_clean.wav")
+        # Default: match input format (e.g. MP3 in → MP3 out)
+        input_ext = input_path.suffix.lower()
+        out_ext = input_ext if input_ext in SUPPORTED_OUTPUT_EXTENSIONS else ".wav"
+        output_path = input_path.with_name(f"{input_path.stem}_clean{out_ext}")
     elif output_path.suffix.lower() not in SUPPORTED_OUTPUT_EXTENSIONS:
         raise ValueError(
             f"Unsupported output file type '{output_path.suffix}'. "
@@ -204,6 +209,9 @@ def process(
         sep_result.instrumentals,
         sep_result.sample_rate,
         output_path,
+        original=sep_result.original,
+        flagged=flagged,
+        input_format=input_format,
     )
 
     elapsed = time.monotonic() - start_time

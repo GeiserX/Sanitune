@@ -19,6 +19,7 @@ def _stub_pipeline(monkeypatch, *, words: list[Word]):
         lambda *_args, **_kwargs: SimpleNamespace(
             vocals=np.zeros((1600, 1), dtype=np.float32),
             instrumentals=np.zeros((1600, 1), dtype=np.float32),
+            original=np.zeros((1600, 1), dtype=np.float32),
             sample_rate=16000,
         ),
     )
@@ -52,14 +53,18 @@ def test_process_rejects_oversized_file(tmp_path):
         process(big_file, max_file_size_mb=1)
 
 
-def test_process_defaults_output_to_wav(tmp_path, monkeypatch):
+def test_process_defaults_output_to_input_format(tmp_path, monkeypatch):
     input_file = tmp_path / "song.mp3"
     input_file.write_bytes(b"audio")
     _stub_pipeline(monkeypatch, words=[Word(text="hello", start=0.0, end=0.5)])
+    monkeypatch.setattr(
+        "sanitune.pipeline.detect_audio_format",
+        lambda _: {"codec": "mp3", "sample_rate": 44100, "channels": 2, "bit_rate": "320000", "extension": ".mp3"},
+    )
 
     captured = {}
 
-    def fake_remix(_vocals, _instrumentals, _sample_rate, output_path):
+    def fake_remix(_vocals, _instrumentals, _sample_rate, output_path, **_kw):
         captured["output_path"] = output_path
         return output_path
 
@@ -67,16 +72,21 @@ def test_process_defaults_output_to_wav(tmp_path, monkeypatch):
 
     result = process(input_file)
 
-    assert result.output_path == tmp_path / "song_clean.wav"
-    assert captured["output_path"].suffix == ".wav"
+    # MP3 input → MP3 output (format preservation)
+    assert result.output_path == tmp_path / "song_clean.mp3"
+    assert captured["output_path"].suffix == ".mp3"
 
 
-def test_process_rejects_unsupported_output_extension(tmp_path):
+def test_process_rejects_unsupported_output_extension(tmp_path, monkeypatch):
     input_file = tmp_path / "song.wav"
     input_file.write_bytes(b"audio")
+    monkeypatch.setattr(
+        "sanitune.pipeline.detect_audio_format",
+        lambda _: {"codec": None, "sample_rate": 44100, "channels": 2, "bit_rate": None, "extension": ".wav"},
+    )
 
     with pytest.raises(ValueError, match="Unsupported output file type"):
-        process(input_file, output_path=tmp_path / "song_clean.m4a")
+        process(input_file, output_path=tmp_path / "song_clean.wma")
 
 
 def test_process_lyrics_alignment_adds_flagged_word(tmp_path, monkeypatch):
@@ -88,6 +98,10 @@ def test_process_lyrics_alignment_adds_flagged_word(tmp_path, monkeypatch):
             Word(text="ship", start=0.0, end=0.4),
             Word(text="song", start=0.4, end=0.8),
         ],
+    )
+    monkeypatch.setattr(
+        "sanitune.pipeline.detect_audio_format",
+        lambda _: {"codec": None, "sample_rate": 44100, "channels": 2, "bit_rate": None, "extension": ".wav"},
     )
     monkeypatch.setattr(
         "sanitune.lyrics.fetch_lyrics",
