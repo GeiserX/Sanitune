@@ -12,11 +12,15 @@ WORKDIR /build
 # Install PyTorch CPU-only first (smaller than full CUDA bundle)
 RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu
 
-# Copy source and install the package
+# Install dependencies separately so source changes don't bust the cache
 COPY pyproject.toml README.md LICENSE ./
-COPY src/ src/
+RUN mkdir -p src/sanitune && \
+    echo '__version__ = "0.1.0"' > src/sanitune/__init__.py && \
+    pip install --no-cache-dir ".[lyrics]"
 
-RUN pip install --no-cache-dir ".[lyrics]"
+# Copy actual source and reinstall (deps already cached)
+COPY src/ src/
+RUN pip install --no-cache-dir --no-deps .
 
 # ---- runtime stage ----
 FROM python:3.12-slim
