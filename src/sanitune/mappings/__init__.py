@@ -49,7 +49,12 @@ def load_mapping(language: str, custom_mapping_path: Path | None = None) -> dict
         if any(not isinstance(k, str) or not isinstance(v, str) for k, v in custom.items()):
             raise ValueError("Custom mapping must contain only string keys and string values")
 
-        mapping.update(custom)
+        # Normalize keys/values: strip whitespace, skip blank values
+        for k, v in custom.items():
+            stripped_key = k.strip()
+            stripped_val = v.strip()
+            if stripped_key and stripped_val:
+                mapping[stripped_key] = stripped_val
         logger.debug("Loaded %d custom mappings from %s", len(custom), custom_mapping_path)
 
     return {k.lower(): v for k, v in mapping.items()}

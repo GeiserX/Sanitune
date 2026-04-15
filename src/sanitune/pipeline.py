@@ -118,8 +118,9 @@ def process(
 
     if output_path is None:
         # Default: match input format (e.g. MP3 in → MP3 out)
-        input_ext = input_path.suffix.lower()
-        out_ext = input_ext if input_ext in SUPPORTED_OUTPUT_EXTENSIONS else ".wav"
+        # Prefer detected extension over file suffix (handles mislabeled files)
+        detected_ext = str(input_format.get("extension") or input_path.suffix).lower()
+        out_ext = detected_ext if detected_ext in SUPPORTED_OUTPUT_EXTENSIONS else ".wav"
         output_path = input_path.with_name(f"{input_path.stem}_clean{out_ext}")
     elif output_path.suffix.lower() not in SUPPORTED_OUTPUT_EXTENSIONS:
         raise ValueError(

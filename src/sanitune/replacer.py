@@ -236,6 +236,7 @@ def replace_words(
     flagged: list[FlaggedWord],
     language: str = "en",
     *,
+    margin_ms: int = 50,
     custom_mapping_path: Path | None = None,
     tts_voice: str | None = None,
 ) -> tuple[np.ndarray, int, int]:
@@ -248,6 +249,7 @@ def replace_words(
         sample_rate: Audio sample rate.
         flagged: List of flagged words.
         language: Language code.
+        margin_ms: Extra margin in ms around each word.
         custom_mapping_path: Optional custom mapping JSON file.
         tts_voice: Override TTS voice.
 
@@ -261,6 +263,7 @@ def replace_words(
     result = vocals.copy()
     replaced = 0
     muted_fallback = 0
+    margin_samples = int(sample_rate * margin_ms / 1000)
 
     for fw in flagged:
         replacement = generate_replacement(
@@ -269,11 +272,20 @@ def replace_words(
         )
 
         start, end = _clamp_bounds(fw.word.start, fw.word.end, sample_rate, len(result))
+        start = max(0, start - margin_samples)
+        end = min(len(result), end + margin_samples)
 
         if start >= end:
             continue
 
         if replacement is not None:
+            # Replacement was sized to the original word; pad with silence for margins
+            region_len = end - start
+            if replacement.shape[0] < region_len:
+                pad_shape = (region_len - replacement.shape[0],) + replacement.shape[1:]
+                replacement = np.concatenate([replacement, np.zeros(pad_shape, dtype=replacement.dtype)])
+            elif replacement.shape[0] > region_len:
+                replacement = replacement[:region_len]
             result[start:end] = replacement
             replaced += 1
         else:

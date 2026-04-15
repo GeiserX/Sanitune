@@ -14,7 +14,7 @@ The foundation — audio processing pipeline without UI.
 - [x] **Audio remix**: Merge processed vocals back with original instrumentals, preserving original quality
 - [x] **Format handling**: Input/output via ffmpeg — support MP3, WAV, FLAC, AAC, OGG, AIFF, M4A
 - [x] **Hardware auto-detection**: PyTorch runtime detection of CUDA, MPS (Apple Silicon), or CPU fallback. User-configurable override via env var or CLI flag
-- [x] **CLI interface**: `sanitune process <file> [--mode mute|bleep] [--language en|es] [--device cpu|cuda|mps]`
+- [x] **CLI**: `sanitune process <file> [--mode mute|bleep] [--language en|es] [--device cpu|cuda|mps]`
 
 ## Phase 2: Voice Replacement (v0.2.0)
 

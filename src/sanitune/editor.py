@@ -89,6 +89,7 @@ def edit(
         result, replaced, muted = replace_words(
             vocals, sample_rate, flagged,
             language=language,
+            margin_ms=margin_ms,
             custom_mapping_path=custom_mapping_path,
             tts_voice=tts_voice,
         )

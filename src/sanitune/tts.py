@@ -78,9 +78,13 @@ def synthesize(
         cache_key = hashlib.sha256(f"{text}|{resolved_voice}|{sample_rate}".encode()).hexdigest()[:16]
         cache_path = _get_cache_dir() / f"{cache_key}.wav"
         if cache_path.exists():
-            data, sr = sf.read(str(cache_path), dtype="float32")
-            logger.debug("TTS cache hit for '%s'", text)
-            return data, sr
+            try:
+                data, sr = sf.read(str(cache_path), dtype="float32")
+                logger.debug("TTS cache hit for '%s'", text)
+                return data, sr
+            except (OSError, RuntimeError) as exc:
+                logger.warning("Ignoring bad TTS cache entry %s: %s", cache_path, exc)
+                cache_path.unlink(missing_ok=True)
 
     # Generate via edge-tts (async API)
     async def _generate() -> Path:
