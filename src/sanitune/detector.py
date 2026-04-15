@@ -76,10 +76,18 @@ def detect(
     profanity_set = load_wordlist(language)
 
     if custom_words:
-        profanity_set.update(w.lower() for w in custom_words)
+        for w in custom_words:
+            lw = w.lower()
+            profanity_set.add(lw)
+            profanity_set.add(_normalize(lw))
 
     if exclude_words:
-        profanity_set -= {w.lower() for w in exclude_words}
+        to_remove: set[str] = set()
+        for w in exclude_words:
+            lw = w.lower()
+            to_remove.add(lw)
+            to_remove.add(_normalize(lw))
+        profanity_set -= to_remove
 
     flagged = []
     strip_pattern = re.compile(r"[^\w']", re.UNICODE)

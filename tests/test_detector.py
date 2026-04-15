@@ -128,3 +128,20 @@ def test_detect_short_term_not_matched_as_substring():
     flagged = detect(words, custom_words=["ass"])
     # "ass" is 3 chars, so substring match threshold (>=4) should prevent matching "class"
     assert len(flagged) == 0
+
+
+def test_detect_custom_words_accent_normalized():
+    """Custom words should be normalized the same way as built-ins."""
+    words = [Word(text="cojon", start=0.0, end=0.5)]
+    flagged = detect(words, custom_words=["cojón"])
+    assert len(flagged) == 1
+
+
+def test_detect_exclude_words_accent_normalized():
+    """Excluding an accented word should also remove its normalized form."""
+    words = [
+        Word(text="cabron", start=0.0, end=0.5),
+        Word(text="cabrón", start=0.5, end=1.0),
+    ]
+    flagged = detect(words, language="es", exclude_words=["cabrón"])
+    assert len(flagged) == 0

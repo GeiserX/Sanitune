@@ -35,7 +35,7 @@ def separate(audio_path: Path, *, device: str = "cpu", model_name: str = "htdemu
     logger.info("Separating vocals from instrumentals with %s on %s...", model_name, device)
 
     sep = Separator(model=model_name, device=torch.device(device))
-    origin, separated = sep.separate_audio_file(str(audio_path))
+    _, separated = sep.separate_audio_file(str(audio_path))
 
     sr = sep.samplerate
     vocals = separated["vocals"].cpu().numpy()

@@ -15,8 +15,8 @@ def _parse_positive_int(name: str, default: str) -> int:
     raw = os.environ.get(name, default)
     try:
         value = int(raw)
-    except ValueError:
-        raise ValueError(f"Environment variable {name}='{raw}' is not a valid integer")
+    except ValueError as err:
+        raise ValueError(f"Environment variable {name}='{raw}' is not a valid integer") from err
     if value <= 0:
         raise ValueError(f"Environment variable {name}={value} must be a positive integer")
     return value
