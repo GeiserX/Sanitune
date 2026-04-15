@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 200" width="900" height="200">
+  <defs>
+    <!-- Deep teal-to-dark gradient (clean/pure vibes) -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D3B3B"/>
+      <stop offset="50%" stop-color="#0A2525"/>
+      <stop offset="100%" stop-color="#061818"/>
+    </linearGradient>
+    <!-- Accent gradient for icon elements -->
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5EEAD4"/>
+      <stop offset="100%" stop-color="#14B8A6"/>
+    </linearGradient>
+    <!-- Glow behind icon -->
+    <radialGradient id="iconGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#14B8A6" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#14B8A6" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Subtle right-side glow -->
+    <radialGradient id="rightGlow" cx="85%" cy="50%" r="30%">
+      <stop offset="0%" stop-color="#0D9488" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#0D9488" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="200" rx="12" fill="url(#bg)"/>
+  <rect width="900" height="200" rx="12" fill="url(#rightGlow)"/>
+
+  <!-- Subtle waveform pattern (audio visualization) -->
+  <g opacity="0.06" stroke="#5EEAD4" stroke-width="1.5" fill="none">
+    <path d="M0,100 Q25,80 50,100 T100,100 T150,100 T200,100 T250,100 T300,100 T350,100 T400,100 T450,100 T500,100 T550,100 T600,100 T650,100 T700,100 T750,100 T800,100 T850,100 T900,100"/>
+    <path d="M0,100 Q25,65 50,100 T100,100 T150,100 T200,100 T250,100 T300,100 T350,100 T400,100 T450,100 T500,100 T550,100 T600,100 T650,100 T700,100 T750,100 T800,100 T850,100 T900,100"/>
+  </g>
+
+  <!-- Decorative dots pattern -->
+  <g opacity="0.04" fill="#5EEAD4">
+    <circle cx="50" cy="30" r="1.5"/>
+    <circle cx="100" cy="30" r="1.5"/>
+    <circle cx="150" cy="30" r="1.5"/>
+    <circle cx="750" cy="170" r="1.5"/>
+    <circle cx="800" cy="170" r="1.5"/>
+    <circle cx="850" cy="170" r="1.5"/>
+    <circle cx="50" cy="60" r="1"/>
+    <circle cx="100" cy="60" r="1"/>
+    <circle cx="850" cy="140" r="1"/>
+    <circle cx="800" cy="140" r="1"/>
+  </g>
+
+  <!-- Icon glow -->
+  <circle cx="255" cy="100" r="70" fill="url(#iconGlow)"/>
+
+  <!-- Music note + sparkle/clean icon composite -->
+  <g transform="translate(255, 100)">
+    <!-- Musical note -->
+    <path d="M-15,20 L-15,-25 L15,-32 L15,13"
+          fill="none" stroke="url(#accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+    <!-- Note heads (filled ovals) -->
+    <ellipse cx="-22" cy="22" rx="9" ry="7" fill="url(#accent)" opacity="0.7" transform="rotate(-15,-22,22)"/>
+    <ellipse cx="8" cy="15" rx="9" ry="7" fill="url(#accent)" opacity="0.7" transform="rotate(-15,8,15)"/>
+    <!-- Beam between stems -->
+    <line x1="-15" y1="-25" x2="15" y2="-32" stroke="url(#accent)" stroke-width="3.5" stroke-linecap="round" opacity="0.85"/>
+
+    <!-- Sparkle/clean indicators (three small stars) -->
+    <g opacity="0.8">
+      <!-- Star 1 (top right) -->
+      <path d="M28,-20 L30,-15 L35,-13 L30,-11 L28,-6 L26,-11 L21,-13 L26,-15 Z" fill="#5EEAD4" opacity="0.9"/>
+      <!-- Star 2 (smaller, mid right) -->
+      <path d="M35,-2 L36,1 L39,2 L36,3 L35,6 L34,3 L31,2 L34,1 Z" fill="#5EEAD4" opacity="0.6"/>
+      <!-- Star 3 (smallest, top) -->
+      <path d="M18,-32 L19,-30 L21,-29 L19,-28 L18,-26 L17,-28 L15,-29 L17,-30 Z" fill="#5EEAD4" opacity="0.5"/>
+    </g>
+
+    <!-- Subtle "eraser" line crossing a bad word (represents cleaning) -->
+    <line x1="-38" y1="0" x2="-28" y2="0" stroke="#F87171" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+    <line x1="-39" y1="-2" x2="-27" y2="2" stroke="#5EEAD4" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>
+  </g>
+
+  <!-- Title text -->
+  <text x="580" y="88" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="48" font-weight="700" fill="#FFFFFF" text-anchor="middle" letter-spacing="-0.5">
+    Sanitune
+  </text>
+
+  <!-- Tagline -->
+  <text x="580" y="120" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="15" fill="#5EEAD4" text-anchor="middle" letter-spacing="0.8" opacity="0.85">
+    AI-powered song cleaning
+  </text>
+
+  <!-- Subtle separator dot -->
+  <circle cx="580" cy="138" r="2" fill="#14B8A6" opacity="0.35"/>
+
+  <!-- Tech badges row -->
+  <text x="580" y="155" font-family="'SF Mono', 'Fira Code', 'Consolas', monospace" font-size="10" fill="#0D9488" text-anchor="middle" letter-spacing="2" opacity="0.5">
+    DEMUCS  ·  WHISPER  ·  RVC  ·  LOCAL AI
+  </text>
+</svg>

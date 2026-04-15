@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Models (downloaded at runtime)
+models/
+*.bin
+*.pt
+*.pth
+*.ggml
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Audio processing temp
+separated/
+output/
+
+# OMC state
+.omc/
+
+# AGENTS.md (contains secrets)
+AGENTS.md
