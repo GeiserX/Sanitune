@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+import io
 import logging
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
+import soundfile as sf
 
 logger = logging.getLogger(__name__)
+
+# Formats soundfile (libsndfile) can read natively
+_SOUNDFILE_FORMATS = {".wav", ".flac", ".ogg", ".aiff", ".aif"}
 
 
 @dataclass
@@ -16,6 +22,22 @@ class SeparationResult:
     vocals: np.ndarray
     instrumentals: np.ndarray
     sample_rate: int
+
+
+def _load_audio(audio_path: Path) -> tuple[np.ndarray, int]:
+    """Load audio using soundfile, falling back to ffmpeg for MP3/AAC/etc."""
+    if audio_path.suffix.lower() in _SOUNDFILE_FORMATS:
+        data, sr = sf.read(str(audio_path), dtype="float32")
+        return data, sr
+
+    # Use ffmpeg to decode formats soundfile can't handle (MP3, AAC, WMA, etc.)
+    proc = subprocess.run(
+        ["ffmpeg", "-i", str(audio_path), "-f", "wav", "-acodec", "pcm_f32le", "-ac", "2", "-"],
+        capture_output=True,
+        check=True,
+    )
+    data, sr = sf.read(io.BytesIO(proc.stdout), dtype="float32")
+    return data, sr
 
 
 def separate(audio_path: Path, *, device: str = "cpu", model_name: str = "htdemucs_ft") -> SeparationResult:
@@ -40,8 +62,11 @@ def separate(audio_path: Path, *, device: str = "cpu", model_name: str = "htdemu
     model.to(torch.device(device))
     sr = model.samplerate
 
-    # Load and resample audio to model's expected sample rate
-    wav, orig_sr = torchaudio.load(str(audio_path))
+    # Load audio without depending on torchaudio's changing backends
+    data, orig_sr = _load_audio(audio_path)
+    # Convert to torch tensor: (channels, samples)
+    wav = torch.from_numpy(data.T if data.ndim == 2 else data[None]).float()
+
     if orig_sr != sr:
         logger.info("Resampling from %d to %d Hz...", orig_sr, sr)
         wav = torchaudio.transforms.Resample(orig_sr, sr)(wav)

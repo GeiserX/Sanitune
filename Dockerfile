@@ -9,24 +9,24 @@ RUN apt-get update && \
 
 WORKDIR /build
 
-# Install PyTorch CPU-only first (smaller than full CUDA bundle)
-RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu
-
-# Pin torch versions so the next pip install cannot upgrade to CUDA variants
-RUN pip freeze | grep -iE "^(torch|torchaudio)==" > /tmp/torch-pin.txt
-
-# Install dependencies separately so source changes don't bust the cache
+# Install all dependencies — pip resolves compatible versions from PyPI
 COPY pyproject.toml README.md LICENSE ./
 RUN mkdir -p src/sanitune && \
     echo '__version__ = "0.1.0"' > src/sanitune/__init__.py && \
-    pip install --no-cache-dir ".[lyrics]" -c /tmp/torch-pin.txt && \
-    # Remove CUDA/GPU packages pulled transitively — not needed for CPU
-    rm -rf /usr/local/lib/python3.12/site-packages/nvidia/ \
-           /usr/local/lib/python3.12/site-packages/triton/ && \
-    # Strip test suites and bytecode caches from all packages
-    find /usr/local/lib/python3.12/site-packages \
-        \( -type d -name "__pycache__" -o -type d -name "tests" -o -type d -name "test" \) \
-        -exec rm -rf {} + 2>/dev/null; true
+    pip install --no-cache-dir ".[lyrics]"
+
+# Swap CUDA torch packages for CPU-only builds (same base versions, much smaller)
+# Strip +cuXXX suffix — CPU index uses +cpu for the same base version
+RUN TORCH_VER=$(python -c "import torch; print(torch.__version__.split('+')[0])") && \
+    AUDIO_VER=$(python -c "import torchaudio; print(torchaudio.__version__.split('+')[0])") && \
+    VISION_VER=$(python -c "import torchvision; print(torchvision.__version__.split('+')[0])") && \
+    pip install --no-cache-dir --force-reinstall --no-deps \
+        "torch==${TORCH_VER}" "torchaudio==${AUDIO_VER}" "torchvision==${VISION_VER}" \
+        --index-url https://download.pytorch.org/whl/cpu
+
+# Remove leftover CUDA packages
+RUN rm -rf /usr/local/lib/python3.12/site-packages/nvidia/ \
+           /usr/local/lib/python3.12/site-packages/triton/
 
 # Copy actual source and reinstall (deps already cached)
 COPY src/ src/
