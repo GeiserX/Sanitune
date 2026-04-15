@@ -85,6 +85,8 @@ def process(
     artist: str | None = None,
     title: str | None = None,
     genius_api_key: str | None = None,
+    custom_mapping_path: Path | None = None,
+    tts_voice: str | None = None,
 ) -> PipelineResult:
     """Run the full Sanitune pipeline on an audio file."""
     settings = Settings.from_env()
@@ -191,6 +193,9 @@ def process(
         flagged,
         mode=resolved_mode,
         bleep_freq=resolved_bleep_freq,
+        language=resolved_language,
+        custom_mapping_path=custom_mapping_path,
+        tts_voice=tts_voice,
     )
 
     logger.info("[5/5] Remixing...")

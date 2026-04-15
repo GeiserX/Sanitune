@@ -46,7 +46,14 @@ def test_settings_from_env(monkeypatch):
 
 
 def test_settings_from_env_rejects_invalid_mode(monkeypatch):
-    monkeypatch.setenv("SANITUNE_DEFAULT_MODE", "replace")
+    monkeypatch.setenv("SANITUNE_DEFAULT_MODE", "invalid_mode")
 
     with pytest.raises(ValueError, match="SANITUNE_DEFAULT_MODE"):
         Settings.from_env()
+
+
+def test_settings_from_env_accepts_replace_mode(monkeypatch):
+    monkeypatch.setenv("SANITUNE_DEFAULT_MODE", "replace")
+
+    settings = Settings.from_env()
+    assert settings.default_mode == "replace"

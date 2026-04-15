@@ -12,8 +12,8 @@ WORKDIR /build
 # Install all dependencies — pip resolves compatible versions from PyPI
 COPY pyproject.toml README.md LICENSE ./
 RUN mkdir -p src/sanitune && \
-    echo '__version__ = "0.1.0"' > src/sanitune/__init__.py && \
-    pip install --no-cache-dir ".[lyrics]"
+    echo '__version__ = "0.2.0"' > src/sanitune/__init__.py && \
+    pip install --no-cache-dir ".[lyrics,replace]"
 
 # Swap CUDA torch packages for CPU-only builds (same base versions, much smaller)
 # Strip +cuXXX suffix — CPU index uses +cpu for the same base version
@@ -36,9 +36,9 @@ RUN pip install --no-cache-dir --no-deps .
 FROM python:3.12-slim
 
 LABEL maintainer="GeiserX <9169332+GeiserX@users.noreply.github.com>"
-LABEL version="0.1.0"
+LABEL version="0.2.0"
 LABEL license="GPL-3.0-only"
-LABEL description="Phase 1 CLI for song cleaning: separate vocals, detect profanity, and mute or bleep flagged words"
+LABEL description="AI-powered song cleaning: separate vocals, detect profanity, and mute, bleep, or replace flagged words with the singer's voice"
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ffmpeg && \

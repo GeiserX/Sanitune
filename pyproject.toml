@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sanitune"
-version = "0.1.0"
-description = "AI-powered song cleaning — separate vocals, detect profanity, and mute or bleep flagged words"
+version = "0.2.0"
+description = "AI-powered song cleaning — separate vocals, detect profanity, and mute, bleep, or replace flagged words"
 readme = "README.md"
 license = "GPL-3.0-only"
 requires-python = ">=3.11"
@@ -41,6 +41,10 @@ dependencies = [
 lyrics = [
     "syncedlyrics>=0.10.0",
     "lyricsgenius>=3.0.0",
+]
+replace = [
+    "edge-tts>=6.1.0",
+    "librosa>=0.10.0",
 ]
 dev = [
     "pytest>=7.0",
