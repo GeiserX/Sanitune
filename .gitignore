@@ -48,3 +48,4 @@ output/
 
 # AGENTS.md (contains secrets)
 AGENTS.md
+.coverage
