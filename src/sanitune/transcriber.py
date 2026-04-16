@@ -46,7 +46,20 @@ def transcribe(
     Returns:
         TranscriptionResult with word-level timestamps.
     """
+    import torch
     import whisperx
+
+    # PyTorch 2.6+ defaults weights_only=True for torch.load, but pyannote-audio's
+    # VAD checkpoint uses omegaconf types not in the safe list. Temporarily patch
+    # torch.load to default weights_only=False during model loading.
+    _original_torch_load = torch.load
+
+    def _patched_torch_load(*args, **kwargs):
+        if kwargs.get("weights_only") is None:
+            kwargs["weights_only"] = False
+        return _original_torch_load(*args, **kwargs)
+
+    torch.load = _patched_torch_load
 
     compute_type = "float16" if device == "cuda" else "float32"
     if device == "mps":
@@ -78,6 +91,8 @@ def transcribe(
         result = whisperx.align(result["segments"], model_a, metadata, str(tmp_path), device)
     finally:
         tmp_path.unlink(missing_ok=True)
+        # Restore original torch.load after all models are loaded
+        torch.load = _original_torch_load
 
     # Extract words
     words = []
