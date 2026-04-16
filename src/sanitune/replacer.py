@@ -165,6 +165,7 @@ def generate_replacement(
     tts_voice: str | None = None,
     reference_audio: np.ndarray | None = None,
     device: str = "cpu",
+    synth_engine: str = "edge-tts",
 ) -> np.ndarray | None:
     """Generate replacement audio for a single flagged word.
 
@@ -221,6 +222,8 @@ def generate_replacement(
             language=language,
             voice=tts_voice,
             sample_rate=sample_rate,
+            engine=synth_engine,
+            singing=synth_engine == "bark",
         )
     except (ImportError, RuntimeError) as exc:
         logger.warning("TTS failed for '%s': %s — falling back to mute", replacement_text, exc)
@@ -320,6 +323,7 @@ def replace_words(
     custom_mapping_path: Path | None = None,
     tts_voice: str | None = None,
     device: str = "cpu",
+    synth_engine: str = "edge-tts",
 ) -> tuple[np.ndarray, int, int]:
     """Replace flagged words in the vocal track with clean alternatives.
 
@@ -369,6 +373,7 @@ def replace_words(
             fw, vocals, sample_rate, mapping,
             language=language, tts_voice=tts_voice,
             reference_audio=reference_audio, device=device,
+            synth_engine=synth_engine,
         )
 
         word_start, word_end = _clamp_bounds(fw.word.start, fw.word.end, sample_rate, len(result))

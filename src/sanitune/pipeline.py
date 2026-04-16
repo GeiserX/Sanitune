@@ -86,6 +86,7 @@ def process(
     genius_api_key: str | None = None,
     custom_mapping_path: Path | None = None,
     tts_voice: str | None = None,
+    synth_engine: str = "edge-tts",
 ) -> PipelineResult:
     """Run the full Sanitune pipeline on an audio file."""
     settings = Settings.from_env()
@@ -203,6 +204,7 @@ def process(
         custom_mapping_path=custom_mapping_path,
         tts_voice=tts_voice,
         device=resolved_device,
+        synth_engine=synth_engine,
     )
 
     logger.info("[5/5] Remixing...")

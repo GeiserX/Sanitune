@@ -58,6 +58,7 @@ def edit(
     custom_mapping_path: Path | None = None,
     tts_voice: str | None = None,
     device: str = "cpu",
+    synth_engine: str = "edge-tts",
 ) -> np.ndarray:
     """Edit vocal track by muting, bleeping, or replacing flagged words.
 
@@ -94,6 +95,7 @@ def edit(
             custom_mapping_path=custom_mapping_path,
             tts_voice=tts_voice,
             device=device,
+            synth_engine=synth_engine,
         )
         logger.info(
             "Edited %d words using 'replace' mode (%d replaced, %d muted fallback)",
