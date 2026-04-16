@@ -38,8 +38,8 @@ def _time_stretch(audio: np.ndarray, target_duration: float, sr: int) -> np.ndar
         return audio
 
     rate = current_duration / target_duration
-    # Clamp rate to avoid extreme stretching
-    rate = max(0.25, min(rate, 4.0))
+    # Clamp rate to avoid extreme stretching artifacts
+    rate = max(0.5, min(rate, 2.0))
 
     stretched = librosa.effects.time_stretch(audio.astype(np.float32), rate=rate)
 
@@ -58,8 +58,8 @@ def _pitch_shift(audio: np.ndarray, semitones: float, sr: int) -> np.ndarray:
 
     if abs(semitones) < 0.1:
         return audio
-    # Clamp to avoid extreme shifts
-    semitones = max(-12.0, min(semitones, 12.0))
+    # Clamp to avoid chipmunk effect — without voice conversion, large shifts sound unnatural
+    semitones = max(-4.0, min(semitones, 4.0))
     return librosa.effects.pitch_shift(audio.astype(np.float32), sr=sr, n_steps=semitones)
 
 
