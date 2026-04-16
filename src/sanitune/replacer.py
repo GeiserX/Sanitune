@@ -166,6 +166,8 @@ def generate_replacement(
     reference_audio: np.ndarray | None = None,
     device: str = "cpu",
     synth_engine: str = "edge-tts",
+    kits_api_key: str | None = None,
+    kits_voice_model_id: int | None = None,
 ) -> np.ndarray | None:
     """Generate replacement audio for a single flagged word.
 
@@ -247,9 +249,24 @@ def generate_replacement(
         except Exception:
             pass
 
-    # Step 5: Voice conversion via Seed-VC (if available)
-    # Converts TTS timbre to match the singer's voice
-    if reference_audio is not None:
+    # Step 5: Voice conversion — Kits.ai (cloud) or Seed-VC (local)
+    if kits_api_key and kits_voice_model_id:
+        try:
+            from sanitune.kits_client import convert_voice as kits_convert
+
+            logger.debug("Converting voice for '%s' via Kits.ai (model=%d)...", replacement_text, kits_voice_model_id)
+            tts_audio = kits_convert(
+                tts_audio, sample_rate,
+                voice_model_id=kits_voice_model_id,
+                api_key=kits_api_key,
+            )
+            logger.debug("Kits.ai voice conversion complete for '%s'", replacement_text)
+        except Exception as exc:
+            logger.warning(
+                "Kits.ai voice conversion failed for '%s': %s — falling back to local",
+                replacement_text, exc,
+            )
+    elif reference_audio is not None:
         try:
             from sanitune.voice_converter import convert_voice, is_available
 
@@ -324,6 +341,8 @@ def replace_words(
     tts_voice: str | None = None,
     device: str = "cpu",
     synth_engine: str = "edge-tts",
+    kits_api_key: str | None = None,
+    kits_voice_model_id: int | None = None,
 ) -> tuple[np.ndarray, int, int]:
     """Replace flagged words in the vocal track with clean alternatives.
 
@@ -374,6 +393,8 @@ def replace_words(
             language=language, tts_voice=tts_voice,
             reference_audio=reference_audio, device=device,
             synth_engine=synth_engine,
+            kits_api_key=kits_api_key,
+            kits_voice_model_id=kits_voice_model_id,
         )
 
         word_start, word_end = _clamp_bounds(fw.word.start, fw.word.end, sample_rate, len(result))

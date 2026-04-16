@@ -87,6 +87,8 @@ def process(
     custom_mapping_path: Path | None = None,
     tts_voice: str | None = None,
     synth_engine: str = "edge-tts",
+    kits_api_key: str | None = None,
+    kits_voice_model_id: int | None = None,
 ) -> PipelineResult:
     """Run the full Sanitune pipeline on an audio file."""
     settings = Settings.from_env()
@@ -205,6 +207,8 @@ def process(
         tts_voice=tts_voice,
         device=resolved_device,
         synth_engine=synth_engine,
+        kits_api_key=kits_api_key,
+        kits_voice_model_id=kits_voice_model_id,
     )
 
     logger.info("[5/5] Remixing...")

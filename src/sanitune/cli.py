@@ -68,6 +68,19 @@ def main() -> None:
     default="edge-tts",
     help="Synthesis engine for replace mode. 'bark' supports singing. Default: edge-tts.",
 )
+@click.option(
+    "--kits-api-key",
+    envvar="KITS_API_KEY",
+    default=None,
+    help="Kits.ai API key for cloud voice conversion. Set via KITS_API_KEY env var or this flag.",
+)
+@click.option(
+    "--kits-voice-model-id",
+    envvar="KITS_VOICE_MODEL_ID",
+    type=int,
+    default=None,
+    help="Kits.ai voice model ID (create at app.kits.ai). Set via KITS_VOICE_MODEL_ID env var.",
+)
 @click.option("-v", "--verbose", is_flag=True, help="Enable verbose logging.")
 def process(
     input_file: Path,
@@ -86,6 +99,8 @@ def process(
     custom_mapping: Path | None,
     tts_voice: str | None,
     synth_engine: str,
+    kits_api_key: str | None,
+    kits_voice_model_id: int | None,
     verbose: bool,
 ) -> None:
     """Process an audio file to remove explicit content."""
@@ -119,6 +134,8 @@ def process(
         custom_mapping_path=custom_mapping,
         tts_voice=tts_voice,
         synth_engine=synth_engine,
+        kits_api_key=kits_api_key,
+        kits_voice_model_id=kits_voice_model_id,
     )
 
     click.echo(f"Output: {result.output_path}")
