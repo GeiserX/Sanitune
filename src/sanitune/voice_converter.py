@@ -202,13 +202,22 @@ def convert_voice(
     if out_audio.dtype != np.float32:
         out_audio = out_audio.astype(np.float32)
 
+    # Resample to match input sample rate if Seed-VC output differs
+    if out_sr != sample_rate:
+        import librosa
+
+        out_audio = librosa.resample(
+            out_audio, orig_sr=out_sr, target_sr=sample_rate,
+        ).astype(np.float32)
+        logger.debug("Resampled voice conversion output from %d Hz to %d Hz", out_sr, sample_rate)
+
     # Normalize if needed
     if out_audio.ndim > 1:
         out_audio = out_audio.mean(axis=-1) if out_audio.shape[-1] <= 2 else out_audio.flatten()
 
     logger.debug(
         "Voice conversion complete: %d samples at %d Hz",
-        len(out_audio), out_sr,
+        len(out_audio), sample_rate,
     )
     return out_audio
 

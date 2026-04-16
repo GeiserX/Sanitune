@@ -326,26 +326,21 @@ def replace_words(
             reference_audio=reference_audio, device=device,
         )
 
-        start, end = _clamp_bounds(fw.word.start, fw.word.end, sample_rate, len(result))
-        start = max(0, start - margin_samples)
-        end = min(len(result), end + margin_samples)
+        word_start, word_end = _clamp_bounds(fw.word.start, fw.word.end, sample_rate, len(result))
+        margin_start = max(0, word_start - margin_samples)
+        margin_end = min(len(result), word_end + margin_samples)
 
-        if start >= end:
+        if word_start >= word_end:
             continue
 
         if replacement is not None:
-            # Replacement was sized to the original word; pad with silence for margins
-            region_len = end - start
-            if replacement.shape[0] < region_len:
-                pad_shape = (region_len - replacement.shape[0],) + replacement.shape[1:]
-                replacement = np.concatenate([replacement, np.zeros(pad_shape, dtype=replacement.dtype)])
-            elif replacement.shape[0] > region_len:
-                replacement = replacement[:region_len]
-            result[start:end] = replacement
+            # Write replacement at exact word bounds (not margin-expanded)
+            word_len = word_end - word_start
+            result[word_start:word_end] = replacement[:word_len]
             replaced += 1
         else:
-            # Fallback: mute
-            result[start:end] = 0.0
+            # Fallback: mute the full margin-expanded region
+            result[margin_start:margin_end] = 0.0
             muted_fallback += 1
 
     logger.info(

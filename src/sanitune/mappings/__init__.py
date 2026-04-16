@@ -57,7 +57,7 @@ def load_mapping(language: str, custom_mapping_path: Path | None = None) -> dict
                 mapping[stripped_key] = stripped_val
         logger.debug("Loaded %d custom mappings from %s", len(custom), custom_mapping_path)
 
-    return {k.lower(): v for k, v in mapping.items()}
+    return {k.strip().lower(): v.strip() for k, v in mapping.items() if k.strip() and v.strip()}
 
 
 def get_replacement(word: str, mapping: dict[str, str]) -> str | None:

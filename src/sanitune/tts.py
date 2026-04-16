@@ -120,10 +120,13 @@ def synthesize(
     # Trim leading/trailing silence (below -40 dB)
     data = _trim_silence(data, threshold_db=-40)
 
-    # Cache result
+    # Cache result (best-effort — never fail synthesis for a cache write error)
     if use_cache:
-        sf.write(str(cache_path), data, sr)
-        logger.debug("TTS cached '%s' → %s", text, cache_path.name)
+        try:
+            sf.write(str(cache_path), data, sr)
+            logger.debug("TTS cached '%s' → %s", text, cache_path.name)
+        except (OSError, RuntimeError) as exc:
+            logger.warning("Failed to cache TTS audio for '%s': %s", text, exc)
 
     return data, sr
 
