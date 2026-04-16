@@ -29,6 +29,50 @@ def _extract_median_f0(audio: np.ndarray, sr: int) -> float:
     return float(np.median(voiced_f0))
 
 
+def _match_pitch_contour(tts_audio: np.ndarray, original_audio: np.ndarray, sr: int) -> np.ndarray:
+    """Warp TTS pitch to follow the original word's melody contour using WORLD vocoder.
+
+    Extracts the F0 contour from the original sung word and applies it to
+    the TTS output, making the replacement follow the exact melody.
+    """
+    import pyworld as pw
+
+    # WORLD needs float64
+    tts_f64 = tts_audio.astype(np.float64)
+    orig_f64 = original_audio.astype(np.float64)
+
+    # Extract F0 contour from the original sung word
+    orig_f0, orig_t = pw.dio(orig_f64, sr)
+    orig_f0 = pw.stonemask(orig_f64, orig_f0, orig_t, sr)
+
+    # Analyze TTS with WORLD (F0 + spectral envelope + aperiodicity)
+    tts_f0, tts_t = pw.dio(tts_f64, sr)
+    tts_f0 = pw.stonemask(tts_f64, tts_f0, tts_t, sr)
+    tts_sp = pw.cheaptrick(tts_f64, tts_f0, tts_t, sr)
+    tts_ap = pw.d4c(tts_f64, tts_f0, tts_t, sr)
+
+    # Resample original F0 contour to match TTS frame count
+    if len(orig_f0) != len(tts_f0):
+        from scipy.interpolate import interp1d
+
+        orig_x = np.linspace(0, 1, len(orig_f0))
+        tts_x = np.linspace(0, 1, len(tts_f0))
+        interp = interp1d(orig_x, orig_f0, kind="linear", fill_value="extrapolate")
+        target_f0 = interp(tts_x)
+    else:
+        target_f0 = orig_f0.copy()
+
+    # Where original is voiced, use its F0; where unvoiced, keep TTS unvoiced
+    for i in range(len(target_f0)):
+        if target_f0[i] <= 0 and tts_f0[i] > 0:
+            # Original unvoiced but TTS voiced — keep TTS F0
+            target_f0[i] = tts_f0[i]
+
+    # Resynthesize with the original's pitch contour but TTS spectral content
+    result = pw.synthesize(target_f0, tts_sp, tts_ap, sr)
+    return result.astype(np.float32)
+
+
 def _time_stretch(audio: np.ndarray, target_duration: float, sr: int) -> np.ndarray:
     """Time-stretch audio to match a target duration."""
     import librosa
@@ -182,22 +226,23 @@ def generate_replacement(
         logger.warning("TTS failed for '%s': %s — falling back to mute", replacement_text, exc)
         return None
 
-    # Step 4: Pitch matching — shift TTS to approximate singer's pitch
-    # (Seed-VC preserves this F0 via f0_condition, so pre-matching helps)
-    semitones_shift = 0.0
+    # Step 4: Pitch contour matching — warp TTS to follow the original melody
+    # Uses WORLD vocoder to transplant the singer's F0 contour onto the TTS,
+    # preserving the exact melody, inflection, and emotion of the original delivery.
     try:
-        orig_f0 = _extract_median_f0(original_mono.astype(np.float32), sample_rate)
-        tts_f0 = _extract_median_f0(tts_audio.astype(np.float32), sample_rate)
-
-        if orig_f0 > 0 and tts_f0 > 0:
-            semitones_shift = 12 * np.log2(orig_f0 / tts_f0)
-            tts_audio = _pitch_shift(tts_audio, float(semitones_shift), sample_rate)
-            logger.debug(
-                "Pitch-shifted '%s': %.1f Hz → %.1f Hz (%.1f st)",
-                replacement_text, tts_f0, orig_f0, semitones_shift,
-            )
+        tts_audio = _match_pitch_contour(tts_audio, original_mono.astype(np.float32), sample_rate)
+        logger.debug("Pitch contour matched for '%s'", replacement_text)
     except Exception as exc:
-        logger.debug("Pitch matching failed for '%s': %s, skipping", replacement_text, exc)
+        logger.debug("Pitch contour matching failed for '%s': %s, falling back to median shift", replacement_text, exc)
+        # Fallback: simple median F0 shift
+        try:
+            orig_f0 = _extract_median_f0(original_mono.astype(np.float32), sample_rate)
+            tts_f0 = _extract_median_f0(tts_audio.astype(np.float32), sample_rate)
+            if orig_f0 > 0 and tts_f0 > 0:
+                semitones_shift = 12 * np.log2(orig_f0 / tts_f0)
+                tts_audio = _pitch_shift(tts_audio, float(semitones_shift), sample_rate)
+        except Exception:
+            pass
 
     # Step 5: Voice conversion via Seed-VC (if available)
     # Converts TTS timbre to match the singer's voice
