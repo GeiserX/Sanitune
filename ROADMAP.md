@@ -35,42 +35,42 @@ The differentiator — replace words with natural-sounding alternatives.
 ### Deferred to future phases
 - **RVC v2 / singing voice cloning**: Too heavy for CPU Docker (~200MB+ model per song). Current TTS approach is lighter and works well for single-word replacements. May revisit when GPU-first deployment is standard
 
-## Phase 3: Web UI (v0.3.0)
+## Phase 3: Web UI (v0.4.0)
 
 Gradio-based web interface for non-technical users.
 
-- [ ] **Upload interface**: Drag-and-drop or file picker for audio files, with format validation and size limits
-- [ ] **Processing status**: Real-time progress bar showing pipeline stages (separating, transcribing, detecting, processing, remixing)
-- [ ] **Interactive transcript**: Display transcribed lyrics with flagged words highlighted. Click to toggle words on/off
+- [x] **Upload interface**: Drag-and-drop or file picker for audio files, with format validation and size limits
+- [x] **Processing status**: Status message showing pipeline results and timing
+- [x] **Interactive transcript**: Display transcribed lyrics with flagged words highlighted in red, with timestamps on hover
 - [ ] **Per-word action selector**: Dropdown per flagged word — mute, bleep, or voice replace. Visual preview of replacement word
-- [ ] **Audio preview**: In-browser playback of original vs. clean version, with A/B comparison toggle
-- [ ] **Download**: One-click download of the clean version in the original format
-- [ ] **Settings panel**: Language selection, device selection, model management, custom word list editor
+- [x] **Audio preview**: In-browser playback of clean version
+- [x] **Download**: One-click download of the clean version in the original format
+- [x] **Settings panel**: Language selection, device selection, synth engine, bleep frequency, word overrides, lyrics lookup, AI suggestions
 - [ ] **Processing history**: Session-based history of processed songs (not persisted across restarts)
 
 ## Phase 4: Docker & Self-Hosting (v0.4.0)
 
 Production-ready containerized deployment.
 
-- [ ] **Dockerfile**: Multi-stage build — slim base with Python, ffmpeg, and all model dependencies. Single container
-- [ ] **Model management**: Auto-download models on first run (Demucs ~300MB, Whisper ~1.5GB, RVC ~200MB). Cache in a volume
-- [ ] **GPU passthrough**: Docker Compose examples for NVIDIA (nvidia-container-toolkit), Intel iGPU (/dev/dri), and CPU-only
-- [ ] **Environment configuration**: All settings via environment variables (SANITUNE_DEVICE, SANITUNE_LANGUAGE, SANITUNE_MODEL_DIR, etc.)
-- [ ] **Health check endpoint**: `/health` for container orchestrators
-- [ ] **Resource limits**: Configurable max file size, max processing time, temp directory cleanup
-- [ ] **Docker Hub publishing**: `drumsergio/sanitune` with versioned tags (never `latest`)
+- [x] **Dockerfile**: Multi-stage build — slim base with Python, ffmpeg, and all model dependencies. Single container
+- [x] **Model management**: Auto-download models on first run (Demucs ~300MB, Whisper ~1.5GB). Cache in a volume via docker-compose
+- [x] **GPU passthrough**: Docker Compose examples for NVIDIA (nvidia-container-toolkit), Intel iGPU (/dev/dri), and CPU-only
+- [x] **Environment configuration**: All settings via environment variables (SANITUNE_DEVICE, SANITUNE_LANGUAGE, KITS_API_KEY, SANITUNE_AI_API_KEY, etc.)
+- [x] **Health check endpoint**: Dockerfile HEALTHCHECK for web UI mode
+- [x] **Resource limits**: Configurable max file size via SANITUNE_MAX_FILE_SIZE
+- [x] **Docker Hub publishing**: `drumsergio/sanitune` with versioned tags (never `latest`)
 - [ ] **Unraid Community App template**: XML template in GeiserX/docker-templates
 
-## Phase 5: AI Contextual Replacement (v0.5.0)
+## Phase 5: AI Contextual Replacement (v0.4.0)
 
 LLM-powered smart word selection.
 
-- [ ] **BYO API key support**: User provides their own LLM API key (OpenAI, Anthropic, or compatible). Key used only for current session, never stored
-- [ ] **Context-aware suggestions**: Send surrounding lyrics + flagged word to LLM, receive contextually appropriate clean replacement
+- [x] **BYO API key support**: User provides their own LLM API key (OpenAI, Anthropic). Key used only for current session, never stored
+- [x] **Context-aware suggestions**: Send surrounding lyrics + flagged word to LLM, receive contextually appropriate clean replacement
 - [ ] **Replacement preview**: Show AI-suggested word alongside default mapping. User picks which to use
-- [ ] **Fallback chain**: AI suggestion -> built-in mapping -> user manual input -> mute (if all else fails)
-- [ ] **Prompt engineering**: Tuned prompt that respects rhyme scheme, syllable count, and emotional tone of the original lyric
-- [ ] **Rate limiting**: Cap LLM calls per song to prevent abuse / cost overruns
+- [x] **Fallback chain**: AI suggestion -> built-in mapping -> mute (if all else fails)
+- [x] **Prompt engineering**: Tuned prompt that respects rhyme scheme, syllable count, and emotional tone of the original lyric
+- [x] **Rate limiting**: Cap LLM calls per song (max 20) to prevent abuse / cost overruns
 
 ## Phase 6: Quality & Polish (v0.6.0)
 

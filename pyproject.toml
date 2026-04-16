@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sanitune"
-version = "0.3.0"
+version = "0.4.0"
 description = "AI-powered song cleaning — separate vocals, detect profanity, and mute, bleep, or replace flagged words"
 readme = "README.md"
 license = "GPL-3.0-only"
@@ -59,6 +59,12 @@ voice = [
     "descript-audio-codec>=1.0.0",
     "pyworld>=0.3.4",
     "suno-bark>=0.0.1a",
+    "requests>=2.28.0",
+]
+web = [
+    "gradio>=4.0.0",
+]
+ai = [
     "requests>=2.28.0",
 ]
 dev = [

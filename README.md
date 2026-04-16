@@ -11,40 +11,31 @@
 
 ---
 
-**Sanitune** is a Phase 1 local CLI for creating clean versions of songs. It separates vocals from instrumentals, transcribes the vocal track, detects explicit words, and then mutes or bleeps those words before remixing the song.
+**Sanitune** is an AI-powered tool for creating clean versions of songs. It separates vocals from instrumentals, transcribes the vocal track, detects explicit words, and then mutes, bleeps, or replaces those words before remixing the song.
 
-The current release is intentionally narrow:
+Key features:
 
-- `sanitune process` is the only shipped command
-- `mute` and `bleep` are the only supported edit modes
-- output is written as `.wav`
-- optional lyrics lookup can improve detection heuristics, but it is not required
+- **Three edit modes**: `mute`, `bleep`, and `replace` (voice replacement with pitch/timbre matching)
+- **Web UI**: Gradio-based interface with drag-and-drop upload, transcript highlighting, and audio preview
+- **AI-powered suggestions**: BYO API key (Anthropic/OpenAI) for context-aware replacement word selection
+- **Voice synthesis**: Edge-TTS (speech) or Bark (singing) for replacement word generation
+- **Cloud voice conversion**: Optional Kits.ai integration for singer voice matching
+- **Format preservation**: Output matches input format (MP3, FLAC, WAV, OGG, M4A, etc.)
+- **CLI + Docker**: Local processing, audio never leaves your machine (except optional AI/cloud features)
 
-Voice replacement, a web UI, and richer self-hosting flows are planned in later phases and are tracked in `ROADMAP.md`.
-
-## How Phase 1 Works
+## How It Works
 
 ```
 Upload Song → Separate Vocals & Instrumentals → Transcribe Lyrics
-    → Detect Profanity → Mute/Bleep Flagged Words → Remix → Write Clean WAV
+    → Detect Profanity → [AI Suggestions] → Mute/Bleep/Replace → Remix → Clean Song
 ```
 
 1. **Source separation** — [Demucs v4](https://github.com/adefossez/demucs) (Meta) isolates vocals from the instrumental track
 2. **Transcription** — [WhisperX](https://github.com/m-bain/whisperX) transcribes lyrics with precise word-level timestamps
 3. **Detection** — Configurable profanity word lists flag explicit content (English + Spanish)
-4. **Processing** — Flagged words are muted or replaced with a tone in the vocal track only
-5. **Remix** — Processed vocals are merged back with the untouched instrumental
-
-## Features
-
-- **Phase 1 CLI**: `sanitune process <file>`
-- **Two edit modes**: `mute` or `bleep`
-- **Word-level editing**: WhisperX timestamps let edits target individual words instead of whole regions
-- **Built-in profanity lists**: English and Spanish wordlists with custom additions/exclusions
-- **Optional lyrics reference**: `pip install -e ".[lyrics]"` enables syncedlyrics/Genius lookup when you pass `--artist` and `--title`
-- **Hardware-aware runtime**: automatic selection of CUDA, MPS, or CPU when available
-- **Docker-friendly batch workflow**: CPU-only CLI container for one-off processing jobs
-- **Local audio processing**: audio never leaves your machine unless you explicitly enable lyrics lookup
+4. **AI suggestions** (optional) — LLM picks context-aware clean replacements that match rhyme, syllable count, and tone
+5. **Processing** — Flagged words are muted, bleeped, or replaced with synthesized clean alternatives
+6. **Remix** — Processed vocals are merged back with the untouched instrumental
 
 ## Quick Start
 
@@ -54,7 +45,7 @@ Upload Song → Separate Vocals & Instrumentals → Transcribe Lyrics
 python -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
-pip install -e .
+pip install -e ".[lyrics,web,ai]"
 
 # Basic mute flow
 sanitune process song.mp3 --mode mute --language en
@@ -62,12 +53,25 @@ sanitune process song.mp3 --mode mute --language en
 # Bleep explicit words instead
 sanitune process song.mp3 --mode bleep --language es --bleep-freq 1200
 
+# Replace with voice synthesis
+sanitune process song.mp3 --mode replace --synth-engine bark -l es
+
+# AI-powered contextual replacements (BYO API key)
+sanitune process song.mp3 --mode replace \
+  --ai-provider anthropic --ai-api-key sk-ant-...
+
 # Override device or output location
 sanitune process song.mp3 --device cuda --output song_clean.wav
-
-# Raise the input size limit when needed
-sanitune process long-song.flac --max-file-size 500
 ```
+
+### Web UI
+
+```bash
+pip install -e ".[web]"
+sanitune web --port 7860
+```
+
+Then open http://localhost:7860 in your browser.
 
 ### Optional Lyrics Lookup
 
@@ -83,21 +87,12 @@ When `--artist` and `--title` are provided, Sanitune may query external lyrics p
 
 ### Docker
 
-The current Docker image is a **CPU-only CLI container**, not a web app.
-
 ```bash
-docker build -t sanitune-local .
+# CLI mode
+docker compose run --rm sanitune process input/song.mp3 -o output/song_clean.wav
 
-# Process a file from the current directory
-docker run --rm \
-  -v "$PWD:/work" \
-  sanitune-local process /work/song.mp3 --output /work/song_clean.wav
-```
-
-### Docker Compose
-
-```bash
-docker compose run --rm sanitune process input/song.mp3 --output output/song_clean.wav
+# Web UI mode (uncomment sanitune-web service in docker-compose.yml)
+docker compose up sanitune-web
 ```
 
 ## Configuration
@@ -109,6 +104,9 @@ docker compose run --rm sanitune process input/song.mp3 --output output/song_cle
 | `SANITUNE_DEFAULT_MODE` | `mute` | Default cleaning mode: `mute`, `bleep` |
 | `SANITUNE_MAX_FILE_SIZE` | `200` | Maximum upload file size in MB |
 | `SANITUNE_BLEEP_FREQ` | `1000` | Bleep tone frequency in Hz |
+| `SANITUNE_AI_API_KEY` | | API key for AI replacement suggestions (Anthropic/OpenAI) |
+| `KITS_API_KEY` | | Kits.ai API key for cloud voice conversion |
+| `KITS_VOICE_MODEL_ID` | | Kits.ai voice model ID |
 
 ## Hardware Requirements
 
@@ -135,11 +133,11 @@ Processing times (per 3-minute song, approximate):
 
 ## Current Limitations
 
-- Output is written as `.wav` in Phase 1
-- There is no web UI yet
-- There is no voice replacement mode yet
-- The Docker image is CPU-only for now
-- Optional lyrics lookup requires extra dependencies and outbound network access
+- Voice replacement quality is experimental — TTS-based synthesis doesn't perfectly match singing voices yet
+- Bark singing output varies in quality depending on language and speaker preset
+- Kits.ai voice conversion requires a paid account and has a 1 request/minute rate limit
+- AI suggestions require a BYO API key (Anthropic or OpenAI)
+- GPU recommended for faster processing (CPU works but is slower)
 
 ## Roadmap
 
