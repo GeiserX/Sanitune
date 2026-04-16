@@ -54,6 +54,8 @@ voice = [
     "munch>=4.0.0",
     "huggingface-hub>=0.20.0",
     "scipy>=1.11.0",
+    "pydub>=0.25.1",
+    "pyyaml>=6.0",
 ]
 dev = [
     "pytest>=7.0",
