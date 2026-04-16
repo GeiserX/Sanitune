@@ -16,7 +16,9 @@ RUN mkdir -p src/sanitune && \
     pip install --no-cache-dir ".[lyrics,voice]"
 
 # Clone Seed-VC for singing voice conversion (GPL-3.0, archived but stable)
-RUN git clone --depth 1 https://github.com/Plachtaa/seed-vc.git /opt/seed-vc
+RUN git clone --depth 1 https://github.com/Plachtaa/seed-vc.git /opt/seed-vc && \
+    sed -i 's/proxies: Optional\[Dict\],/proxies: Optional[Dict] = None,/' /opt/seed-vc/modules/bigvgan/bigvgan.py && \
+    sed -i 's/resume_download: bool,/resume_download: bool = False,/' /opt/seed-vc/modules/bigvgan/bigvgan.py
 
 # Swap CUDA torch packages for CPU-only builds (same base versions, much smaller)
 # Strip +cuXXX suffix — CPU index uses +cpu for the same base version
