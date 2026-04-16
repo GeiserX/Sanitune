@@ -81,6 +81,18 @@ def main() -> None:
     default=None,
     help="Kits.ai voice model ID (create at app.kits.ai). Set via KITS_VOICE_MODEL_ID env var.",
 )
+@click.option(
+    "--ai-provider",
+    type=click.Choice(["anthropic", "openai"]),
+    default=None,
+    help="LLM provider for AI-powered replacement suggestions (replace mode).",
+)
+@click.option(
+    "--ai-api-key",
+    envvar="SANITUNE_AI_API_KEY",
+    default=None,
+    help="API key for AI replacement suggestions. Set via SANITUNE_AI_API_KEY env var.",
+)
 @click.option("-v", "--verbose", is_flag=True, help="Enable verbose logging.")
 def process(
     input_file: Path,
@@ -101,6 +113,8 @@ def process(
     synth_engine: str,
     kits_api_key: str | None,
     kits_voice_model_id: int | None,
+    ai_provider: str | None,
+    ai_api_key: str | None,
     verbose: bool,
 ) -> None:
     """Process an audio file to remove explicit content."""
@@ -114,6 +128,9 @@ def process(
         settings = Settings.from_env()
     except ValueError as err:
         raise click.ClickException(str(err)) from err
+
+    if bool(ai_provider) != bool(ai_api_key):
+        raise click.ClickException("Both --ai-provider and --ai-api-key must be provided together.")
 
     from sanitune.pipeline import process as run_pipeline
 
@@ -136,6 +153,8 @@ def process(
         synth_engine=synth_engine,
         kits_api_key=kits_api_key,
         kits_voice_model_id=kits_voice_model_id,
+        ai_provider=ai_provider,
+        ai_api_key=ai_api_key,
     )
 
     click.echo(f"Output: {result.output_path}")
@@ -144,3 +163,21 @@ def process(
         for fw in result.flagged_words:
             click.echo(f"  [{fw.word.start:.2f}s-{fw.word.end:.2f}s] {fw.word.text} (matched: {fw.matched_term})")
     click.echo(f"Time: {result.elapsed_seconds:.1f}s")
+
+
+@main.command()
+@click.option("--host", default="0.0.0.0", help="Host to bind to.")
+@click.option("--port", type=int, default=7860, help="Port to listen on.")
+@click.option("--share", is_flag=True, help="Create a public Gradio share link.")
+@click.option("-v", "--verbose", is_flag=True, help="Enable verbose logging.")
+def web(host: str, port: int, share: bool, verbose: bool) -> None:
+    """Launch the Gradio web interface."""
+    logging.basicConfig(
+        level=logging.DEBUG if verbose else logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        stream=sys.stderr,
+    )
+
+    from sanitune.web import launch
+
+    launch(host=host, port=port, share=share)

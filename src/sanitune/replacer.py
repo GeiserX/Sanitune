@@ -343,6 +343,7 @@ def replace_words(
     synth_engine: str = "edge-tts",
     kits_api_key: str | None = None,
     kits_voice_model_id: int | None = None,
+    ai_suggestions: dict[str, str] | None = None,
 ) -> tuple[np.ndarray, int, int]:
     """Replace flagged words in the vocal track with clean alternatives.
 
@@ -359,6 +360,7 @@ def replace_words(
         custom_mapping_path: Optional custom mapping JSON file.
         tts_voice: Override TTS voice.
         device: Compute device for voice conversion.
+        ai_suggestions: AI-generated replacement suggestions (override built-in mapping).
 
     Returns:
         Tuple of (edited_vocals, replaced_count, muted_fallback_count).
@@ -367,6 +369,11 @@ def replace_words(
         return vocals.copy(), 0, 0
 
     mapping = load_mapping(language, custom_mapping_path)
+
+    # Merge AI suggestions (they take priority over built-in mappings)
+    if ai_suggestions:
+        mapping.update(ai_suggestions)
+        logger.info("Merged %d AI suggestions into replacement mapping", len(ai_suggestions))
     result = vocals.copy()
     replaced = 0
     muted_fallback = 0

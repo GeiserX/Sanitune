@@ -1,12 +1,65 @@
 services:
   sanitune:
+    image: drumsergio/sanitune:0.4.0
     build:
       context: .
       dockerfile: Dockerfile
     volumes:
       - ./input:/app/input
       - ./output:/app/output
+      # Cache models across runs (Demucs ~300MB, Whisper ~1.5GB)
+      - sanitune-models:/root/.cache
     environment:
       - SANITUNE_DEVICE=cpu
-    # Example: process a file from the input directory
-    # docker compose run sanitune process input/song.mp3 --output output/
+      - SANITUNE_LANGUAGE=en
+      - SANITUNE_DEFAULT_MODE=mute
+      # Optional: AI replacement suggestions
+      # - SANITUNE_AI_API_KEY=sk-...
+      # Optional: Kits.ai voice conversion
+      # - KITS_API_KEY=
+      # - KITS_VOICE_MODEL_ID=
+    # CLI usage: docker compose run --rm sanitune process input/song.mp3 -o output/song_clean.wav
+
+  # Web UI mode — uncomment to use
+  # sanitune-web:
+  #   image: drumsergio/sanitune:0.4.0
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "7860:7860"
+  #   volumes:
+  #     - sanitune-models:/root/.cache
+  #   environment:
+  #     - SANITUNE_DEVICE=cpu
+  #     - SANITUNE_LANGUAGE=en
+  #   entrypoint: ["python", "-m", "sanitune", "web", "--host", "0.0.0.0"]
+  #   healthcheck:
+  #     test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7860/')"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+volumes:
+  sanitune-models:
+
+
+# --- GPU Profiles ---
+# Append to the sanitune service as needed:
+#
+# NVIDIA GPU (requires nvidia-container-toolkit):
+#   deploy:
+#     resources:
+#       reservations:
+#         devices:
+#           - driver: nvidia
+#             count: 1
+#             capabilities: [gpu]
+#   environment:
+#     - SANITUNE_DEVICE=cuda
+#
+# Intel iGPU (QuickSync):
+#   devices:
+#     - /dev/dri:/dev/dri
+#   environment:
+#     - SANITUNE_DEVICE=cpu  # PyTorch doesn't use Intel iGPU directly

@@ -12,9 +12,9 @@ WORKDIR /build
 # Install all dependencies — pip resolves compatible versions from PyPI
 COPY pyproject.toml README.md LICENSE ./
 RUN mkdir -p src/sanitune && \
-    echo '__version__ = "0.3.0"' > src/sanitune/__init__.py && \
+    echo '__version__ = "0.4.0"' > src/sanitune/__init__.py && \
     pip install --no-cache-dir "setuptools<80" && \
-    pip install --no-cache-dir ".[lyrics,voice]"
+    pip install --no-cache-dir ".[lyrics,voice,web,ai]"
 
 # Clone Seed-VC for singing voice conversion (GPL-3.0, archived but stable)
 RUN git clone --depth 1 https://github.com/Plachtaa/seed-vc.git /opt/seed-vc && \
@@ -45,7 +45,7 @@ RUN pip install --no-cache-dir --no-deps .
 FROM python:3.12-slim
 
 LABEL maintainer="GeiserX <9169332+GeiserX@users.noreply.github.com>"
-LABEL version="0.3.0"
+LABEL version="0.4.0"
 LABEL license="GPL-3.0-only"
 LABEL description="AI-powered song cleaning: separate vocals, detect profanity, and mute, bleep, or replace flagged words with the singer's voice"
 
@@ -64,5 +64,11 @@ ENV PYTHONPATH="/opt/seed-vc"
 WORKDIR /app
 
 RUN mkdir -p input output
+
+# Health check for web UI mode (skipped in CLI mode)
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:7860/')" 2>/dev/null || exit 0
+
+EXPOSE 7860
 
 ENTRYPOINT ["python", "-m", "sanitune"]

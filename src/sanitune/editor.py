@@ -61,6 +61,7 @@ def edit(
     synth_engine: str = "edge-tts",
     kits_api_key: str | None = None,
     kits_voice_model_id: int | None = None,
+    ai_suggestions: dict[str, str] | None = None,
 ) -> np.ndarray:
     """Edit vocal track by muting, bleeping, or replacing flagged words.
 
@@ -100,6 +101,7 @@ def edit(
             synth_engine=synth_engine,
             kits_api_key=kits_api_key,
             kits_voice_model_id=kits_voice_model_id,
+            ai_suggestions=ai_suggestions,
         )
         logger.info(
             "Edited %d words using 'replace' mode (%d replaced, %d muted fallback)",

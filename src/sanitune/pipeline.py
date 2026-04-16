@@ -89,6 +89,8 @@ def process(
     synth_engine: str = "edge-tts",
     kits_api_key: str | None = None,
     kits_voice_model_id: int | None = None,
+    ai_provider: str | None = None,
+    ai_api_key: str | None = None,
 ) -> PipelineResult:
     """Run the full Sanitune pipeline on an audio file."""
     settings = Settings.from_env()
@@ -195,6 +197,36 @@ def process(
             flagged.sort(key=lambda item: item.index)
             logger.info("Lyrics alignment added %d extra flagged words", len(lyrics_flags))
 
+    # Step 3.5: AI-powered contextual replacement suggestions
+    ai_suggestions: dict[str, str] | None = None
+    if ai_provider and ai_api_key and resolved_mode == "replace" and flagged:
+        try:
+            from sanitune.ai_suggest import suggest_replacements_batch
+
+            logger.info("[3.5/5] Getting AI replacement suggestions...")
+            ai_items = []
+            for fw in flagged:
+                idx = fw.index
+                words = trans_result.words
+                before = " ".join(w.text for w in words[max(0, idx - 10):idx])
+                after = " ".join(w.text for w in words[idx + 1:idx + 11])
+                ai_items.append({
+                    "word": fw.matched_term,
+                    "context_before": before,
+                    "context_after": after,
+                })
+
+            ai_suggestions = suggest_replacements_batch(
+                ai_items,
+                language=resolved_language,
+                provider=ai_provider,
+                api_key=ai_api_key,
+            )
+            if ai_suggestions:
+                logger.info("AI suggested %d replacements", len(ai_suggestions))
+        except Exception as exc:
+            logger.warning("AI suggestions failed: %s — continuing with built-in mappings", exc)
+
     logger.info("[4/5] Editing vocals (%d words flagged)...", len(flagged))
     edited_vocals = edit(
         sep_result.vocals,
@@ -209,6 +241,7 @@ def process(
         synth_engine=synth_engine,
         kits_api_key=kits_api_key,
         kits_voice_model_id=kits_voice_model_id,
+        ai_suggestions=ai_suggestions,
     )
 
     logger.info("[5/5] Remixing...")
