@@ -32,8 +32,10 @@ def _get_wrapper(device: str = "cpu"):
             "and add to PYTHONPATH, or install sanitune[voice]."
         )
 
+    import torch
+
     logger.info("Loading Seed-VC singing voice conversion model on %s...", device)
-    _wrapper = SeedVCWrapper(device=device)
+    _wrapper = SeedVCWrapper(device=torch.device(device))
     _wrapper_device = device
     logger.info("Seed-VC loaded successfully")
     return _wrapper
