@@ -1,8 +1,9 @@
-"""Audio editing — mute or bleep flagged words in the vocal track."""
+"""Audio editing — mute, bleep, or replace flagged words in the vocal track."""
 
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 import numpy as np
 
@@ -53,27 +54,52 @@ def edit(
     mode: str = "mute",
     bleep_freq: int = 1000,
     margin_ms: int = 50,
+    language: str = "en",
+    custom_mapping_path: Path | None = None,
+    tts_voice: str | None = None,
+    device: str = "cpu",
 ) -> np.ndarray:
-    """Edit vocal track by muting or bleeping flagged words.
+    """Edit vocal track by muting, bleeping, or replacing flagged words.
 
     Args:
         vocals: Vocal audio array (samples,) or (samples, channels).
         sample_rate: Sample rate of the audio.
         flagged: List of flagged words with timestamps.
-        mode: 'mute' to silence, 'bleep' to overlay a tone.
+        mode: 'mute' to silence, 'bleep' to overlay a tone, 'replace' for voice replacement.
         bleep_freq: Frequency of the bleep tone in Hz.
         margin_ms: Extra margin in ms around each word for cleaner edits.
+        language: Language code (used by replace mode for TTS and mapping selection).
+        custom_mapping_path: Path to custom replacement mapping JSON (replace mode).
+        tts_voice: Override TTS voice name (replace mode).
 
     Returns:
         Edited vocal audio array.
     """
-    valid_modes = {"mute", "bleep"}
+    valid_modes = {"mute", "bleep", "replace"}
     if mode not in valid_modes:
         raise ValueError(f"Unknown edit mode '{mode}'. Valid modes: {valid_modes}")
 
     if not flagged:
         logger.info("No flagged words to edit")
         return vocals.copy()
+
+    # Delegate to replacer for replace mode
+    if mode == "replace":
+        from sanitune.replacer import replace_words
+
+        result, replaced, muted = replace_words(
+            vocals, sample_rate, flagged,
+            language=language,
+            margin_ms=margin_ms,
+            custom_mapping_path=custom_mapping_path,
+            tts_voice=tts_voice,
+            device=device,
+        )
+        logger.info(
+            "Edited %d words using 'replace' mode (%d replaced, %d muted fallback)",
+            len(flagged), replaced, muted,
+        )
+        return result
 
     result = vocals.copy()
     margin_samples = int(sample_rate * margin_ms / 1000)

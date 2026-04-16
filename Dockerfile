@@ -4,7 +4,7 @@
 FROM python:3.12-slim AS builder
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends build-essential && \
+    apt-get install -y --no-install-recommends build-essential git && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
@@ -12,16 +12,24 @@ WORKDIR /build
 # Install all dependencies — pip resolves compatible versions from PyPI
 COPY pyproject.toml README.md LICENSE ./
 RUN mkdir -p src/sanitune && \
-    echo '__version__ = "0.1.0"' > src/sanitune/__init__.py && \
-    pip install --no-cache-dir ".[lyrics]"
+    echo '__version__ = "0.2.0"' > src/sanitune/__init__.py && \
+    pip install --no-cache-dir ".[lyrics,voice]"
+
+# Clone Seed-VC for singing voice conversion (GPL-3.0, archived but stable)
+RUN git clone --depth 1 https://github.com/Plachtaa/seed-vc.git /opt/seed-vc && \
+    sed -i 's/proxies: Optional\[Dict\],/proxies: Optional[Dict] = None,/' /opt/seed-vc/modules/bigvgan/bigvgan.py && \
+    sed -i 's/resume_download: bool,/resume_download: bool = False,/' /opt/seed-vc/modules/bigvgan/bigvgan.py
 
 # Swap CUDA torch packages for CPU-only builds (same base versions, much smaller)
 # Strip +cuXXX suffix — CPU index uses +cpu for the same base version
+# Only swap packages that are actually installed (torchvision may not be present)
 RUN TORCH_VER=$(python -c "import torch; print(torch.__version__.split('+')[0])") && \
     AUDIO_VER=$(python -c "import torchaudio; print(torchaudio.__version__.split('+')[0])") && \
-    VISION_VER=$(python -c "import torchvision; print(torchvision.__version__.split('+')[0])") && \
+    PKGS="torch==${TORCH_VER} torchaudio==${AUDIO_VER}" && \
+    VISION_VER=$(python -c "import torchvision; print(torchvision.__version__.split('+')[0])" 2>/dev/null) && \
+    PKGS="${PKGS} torchvision==${VISION_VER}" || true && \
     pip install --no-cache-dir --force-reinstall --no-deps \
-        "torch==${TORCH_VER}" "torchaudio==${AUDIO_VER}" "torchvision==${VISION_VER}" \
+        ${PKGS} \
         --index-url https://download.pytorch.org/whl/cpu
 
 # Remove leftover CUDA packages
@@ -36,9 +44,9 @@ RUN pip install --no-cache-dir --no-deps .
 FROM python:3.12-slim
 
 LABEL maintainer="GeiserX <9169332+GeiserX@users.noreply.github.com>"
-LABEL version="0.1.0"
+LABEL version="0.2.0"
 LABEL license="GPL-3.0-only"
-LABEL description="Phase 1 CLI for song cleaning: separate vocals, detect profanity, and mute or bleep flagged words"
+LABEL description="AI-powered song cleaning: separate vocals, detect profanity, and mute, bleep, or replace flagged words with the singer's voice"
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ffmpeg && \
@@ -47,6 +55,10 @@ RUN apt-get update && \
 # Copy installed Python packages from builder
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy Seed-VC for singing voice conversion
+COPY --from=builder /opt/seed-vc /opt/seed-vc
+ENV PYTHONPATH="/opt/seed-vc"
 
 WORKDIR /app
 

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 VALID_DEVICES = {"cpu", "cuda", "mps"}
 VALID_DEVICE_OPTIONS = {"auto", *VALID_DEVICES}
-VALID_MODES = {"mute", "bleep"}
+VALID_MODES = {"mute", "bleep", "replace"}
 
 
 def _parse_positive_int(name: str, default: str) -> int:

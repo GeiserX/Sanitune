@@ -21,6 +21,7 @@ _SOUNDFILE_FORMATS = {".wav", ".flac", ".ogg", ".aiff", ".aif"}
 class SeparationResult:
     vocals: np.ndarray
     instrumentals: np.ndarray
+    original: np.ndarray
     sample_rate: int
 
 
@@ -71,6 +72,9 @@ def separate(audio_path: Path, *, device: str = "cpu", model_name: str = "htdemu
         logger.info("Resampling from %d to %d Hz...", orig_sr, sr)
         wav = torchaudio.transforms.Resample(orig_sr, sr)(wav)
 
+    # Preserve resampled original for surgical editing
+    original_resampled = wav.numpy().T  # (samples, channels)
+
     # apply_model expects (batch, channels, samples) → returns (batch, sources, channels, samples)
     sources = apply_model(model, wav[None], device=torch.device(device))
 
@@ -89,4 +93,4 @@ def separate(audio_path: Path, *, device: str = "cpu", model_name: str = "htdemu
     instrumentals = instrumentals.T
 
     logger.info("Separation complete. Vocals: %s, Instrumentals: %s, SR: %d", vocals.shape, instrumentals.shape, sr)
-    return SeparationResult(vocals=vocals, instrumentals=instrumentals, sample_rate=sr)
+    return SeparationResult(vocals=vocals, instrumentals=instrumentals, original=original_resampled, sample_rate=sr)

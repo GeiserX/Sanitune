@@ -74,7 +74,7 @@ def test_cli_options_override_env_defaults(monkeypatch):
 
 
 def test_cli_reports_invalid_env_config(monkeypatch):
-    monkeypatch.setenv("SANITUNE_DEFAULT_MODE", "replace")
+    monkeypatch.setenv("SANITUNE_DEFAULT_MODE", "invalid_mode")
 
     runner = CliRunner()
     with runner.isolated_filesystem():

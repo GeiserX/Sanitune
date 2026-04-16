@@ -54,6 +54,14 @@ def main() -> None:
 @click.option("--artist", default=None, help="Artist name for lyrics lookup.")
 @click.option("--title", default=None, help="Song title for lyrics lookup.")
 @click.option("--genius-api-key", envvar="GENIUS_API_KEY", default=None, help="Genius API key for lyrics.")
+@click.option(
+    "--mapping",
+    "custom_mapping",
+    type=click.Path(exists=True, dir_okay=False, readable=True, path_type=Path),
+    default=None,
+    help="Custom replacement word mapping JSON file (for replace mode).",
+)
+@click.option("--tts-voice", default=None, help="Override TTS voice name (for replace mode).")
 @click.option("-v", "--verbose", is_flag=True, help="Enable verbose logging.")
 def process(
     input_file: Path,
@@ -69,6 +77,8 @@ def process(
     artist: str | None,
     title: str | None,
     genius_api_key: str | None,
+    custom_mapping: Path | None,
+    tts_voice: str | None,
     verbose: bool,
 ) -> None:
     """Process an audio file to remove explicit content."""
@@ -99,6 +109,8 @@ def process(
         artist=artist,
         title=title,
         genius_api_key=genius_api_key,
+        custom_mapping_path=custom_mapping,
+        tts_voice=tts_voice,
     )
 
     click.echo(f"Output: {result.output_path}")

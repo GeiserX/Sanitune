@@ -4,30 +4,36 @@
 
 The foundation — audio processing pipeline without UI.
 
-- [ ] **Project scaffolding**: Python package structure, pyproject.toml, CLI entry point
-- [ ] **Audio source separation**: Demucs v4 (`htdemucs_ft`) integration — split any song into vocals + instrumentals
-- [ ] **Transcription with word timestamps**: WhisperX integration — word-level aligned transcription of isolated vocals
-- [ ] **Lyrics reference alignment**: Optional Genius API / LRCLIB integration — align Whisper output against known lyrics to correct transcription errors (especially for heavily produced tracks)
-- [ ] **Profanity detection engine**: Configurable word lists for English and Spanish, with exact/partial/fuzzy matching modes
-- [ ] **Mute mode**: Silence flagged words in the vocal track only, with smooth 10-20ms crossfades at edit boundaries. Instrumentals play through untouched
-- [ ] **Bleep mode**: Replace flagged words with a configurable tone (frequency, duration) overlaid on the vocal track
-- [ ] **Audio remix**: Merge processed vocals back with original instrumentals, preserving original quality
-- [ ] **Format handling**: Input/output via ffmpeg — support MP3, WAV, FLAC, AAC, OGG, AIFF, M4A
-- [ ] **Hardware auto-detection**: PyTorch runtime detection of CUDA, MPS (Apple Silicon), or CPU fallback. User-configurable override via env var or CLI flag
-- [ ] **CLI interface**: `sanitune process <file> [--mode mute|bleep] [--language en|es] [--device cpu|cuda|mps]`
+- [x] **Project scaffolding**: Python package structure, pyproject.toml, CLI entry point
+- [x] **Audio source separation**: Demucs v4 (`htdemucs_ft`) integration — split any song into vocals + instrumentals
+- [x] **Transcription with word timestamps**: WhisperX integration — word-level aligned transcription of isolated vocals
+- [x] **Lyrics reference alignment**: Optional Genius API / LRCLIB integration — align Whisper output against known lyrics to correct transcription errors (especially for heavily produced tracks)
+- [x] **Profanity detection engine**: Configurable word lists for English and Spanish, with exact/partial/fuzzy matching modes
+- [x] **Mute mode**: Silence flagged words in the vocal track only, with smooth 10-20ms crossfades at edit boundaries. Instrumentals play through untouched
+- [x] **Bleep mode**: Replace flagged words with a configurable tone (frequency, duration) overlaid on the vocal track
+- [x] **Audio remix**: Merge processed vocals back with original instrumentals, preserving original quality
+- [x] **Format handling**: Input/output via ffmpeg — support MP3, WAV, FLAC, AAC, OGG, AIFF, M4A
+- [x] **Hardware auto-detection**: PyTorch runtime detection of CUDA, MPS (Apple Silicon), or CPU fallback. User-configurable override via env var or CLI flag
+- [x] **CLI**: `sanitune process <file> [--mode mute|bleep] [--language en|es] [--device cpu|cuda|mps]`
 
 ## Phase 2: Voice Replacement (v0.2.0)
 
-The differentiator — replace words with the singer's own voice.
+The differentiator — replace words with natural-sounding alternatives.
 
-- [ ] **RVC v2 integration**: Voice conversion pipeline via Applio/RVC for singing voice cloning
-- [ ] **Auto voice model training**: Extract clean vocal segments from the separated track (~10 min), auto-train a per-song RVC model
-- [ ] **Replacement word mapping**: Built-in profanity-to-clean-word dictionary (EN + ES). E.g., fuck -> heck, shit -> crap, damn -> darn, mierda -> rayos, joder -> jolines
-- [ ] **Voice replacement pipeline**: Generate replacement word audio via TTS/recording, convert to singer's voice via RVC, splice into vocal track with crossfade
-- [ ] **Pitch and timing matching**: Match the replacement word's pitch contour and duration to the original word's melody position
-- [ ] **Spectral smoothing**: Post-process splice boundaries with VoiceFixer or similar to reduce artifacts
-- [ ] **User word override**: Allow users to type custom replacement words (must be real dictionary words)
-- [ ] **CLI extension**: `sanitune process <file> --mode replace [--mapping custom.json]`
+- [x] **Replacement word mapping**: Built-in profanity-to-clean-word dictionaries (EN: 43 entries, ES: 47 entries). E.g., fuck → heck, shit → crap, picha → cosa, joder → jolines
+- [x] **TTS-based voice replacement**: edge-tts (Microsoft Edge Neural voices) generates replacement words with disk caching for fast re-runs
+- [x] **Pitch and timing matching**: librosa pyin F0 extraction + pitch shifting to match singer's pitch; time-stretch to match original word duration
+- [x] **Loudness matching**: RMS-based level alignment between replacement and original audio
+- [x] **Spectral smoothing**: Hann-windowed overlap-add at splice boundaries for seamless transitions
+- [x] **Surgical editing**: Only modify flagged word regions — rest of song preserved byte-for-byte from original. Crossfade at region boundaries (configurable margin + fade)
+- [x] **Format preservation**: Output matches input format (MP3→MP3, FLAC→FLAC) with same bitrate/sample rate via ffprobe detection + ffmpeg encoding. Supports WAV, MP3, FLAC, OGG, M4A, AAC, OPUS
+- [x] **Mute fallback**: Words without a mapping entry are silenced as fallback (no crash on unmapped words)
+- [x] **Multi-language TTS voices**: Default neural voices for EN, ES, FR, DE, IT, PT, JA, KO, ZH
+- [x] **User word override**: Custom mapping JSON via `--mapping custom.json` overrides/extends built-in dictionaries
+- [x] **CLI extension**: `sanitune process <file> --mode replace [--mapping custom.json] [--tts-voice voice-name]`
+
+### Deferred to future phases
+- **RVC v2 / singing voice cloning**: Too heavy for CPU Docker (~200MB+ model per song). Current TTS approach is lighter and works well for single-word replacements. May revisit when GPU-first deployment is standard
 
 ## Phase 3: Web UI (v0.3.0)
 

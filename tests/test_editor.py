@@ -80,7 +80,7 @@ def test_edit_rejects_invalid_mode():
     flagged = [_make_flagged("fuck", 0.3, 0.5)]
 
     with pytest.raises(ValueError, match="Unknown edit mode"):
-        edit(audio, sr, flagged, mode="replace")
+        edit(audio, sr, flagged, mode="invalid_mode")
 
     with pytest.raises(ValueError, match="Unknown edit mode"):
         edit(audio, sr, flagged, mode="Mute")
