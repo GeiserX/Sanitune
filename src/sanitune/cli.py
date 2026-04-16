@@ -129,6 +129,9 @@ def process(
     except ValueError as err:
         raise click.ClickException(str(err)) from err
 
+    if bool(ai_provider) != bool(ai_api_key):
+        raise click.ClickException("Both --ai-provider and --ai-api-key must be provided together.")
+
     from sanitune.pipeline import process as run_pipeline
 
     result = run_pipeline(

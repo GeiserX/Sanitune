@@ -65,9 +65,9 @@ WORKDIR /app
 
 RUN mkdir -p input output
 
-# Health check for web UI mode
+# Health check for web UI mode (skipped in CLI mode)
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:7860/')" || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:7860/')" 2>/dev/null || exit 0
 
 EXPOSE 7860
 

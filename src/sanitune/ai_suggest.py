@@ -93,7 +93,12 @@ def _call_anthropic(user_prompt: str, api_key: str, model: str | None) -> tuple[
         logger.warning("Anthropic API error %d: %s", resp.status_code, resp.text[:200])
         return None, 0.0
 
-    content = resp.json()["content"][0]["text"]
+    try:
+        data = resp.json()
+        content = data["content"][0]["text"]
+    except (ValueError, KeyError, IndexError, TypeError):
+        logger.warning("Anthropic API returned unexpected response: %s", resp.text[:200])
+        return None, 0.0
     return _parse_response(content)
 
 
@@ -124,7 +129,12 @@ def _call_openai(user_prompt: str, api_key: str, model: str | None) -> tuple[str
         logger.warning("OpenAI API error %d: %s", resp.status_code, resp.text[:200])
         return None, 0.0
 
-    content = resp.json()["choices"][0]["message"]["content"]
+    try:
+        data = resp.json()
+        content = data["choices"][0]["message"]["content"]
+    except (ValueError, KeyError, IndexError, TypeError):
+        logger.warning("OpenAI API returned unexpected response: %s", resp.text[:200])
+        return None, 0.0
     return _parse_response(content)
 
 
@@ -162,6 +172,7 @@ def suggest_replacements_batch(
         Dict mapping flagged word → suggested replacement.
     """
     suggestions: dict[str, str] = {}
+    attempted: set[str] = set()
     calls_made = 0
 
     for item in flagged_words:
@@ -170,9 +181,10 @@ def suggest_replacements_batch(
             break
 
         word = item["word"]
-        # Skip duplicates
-        if word in suggestions:
+        # Skip already attempted words (whether successful or not)
+        if word in attempted:
             continue
+        attempted.add(word)
 
         replacement, confidence = suggest_replacement(
             word,

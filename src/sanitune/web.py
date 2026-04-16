@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import html
 import logging
 import tempfile
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+# Keep temp dirs alive so Gradio can serve the files; cleaned up on next request
+_previous_tmpdir: tempfile.TemporaryDirectory | None = None
 
 
 def _process_audio(
@@ -33,8 +37,16 @@ def _process_audio(
     if not audio_path:
         return None, "", "No file uploaded."
 
+    # Clean up previous request's temp dir
+    global _previous_tmpdir
+    if _previous_tmpdir is not None:
+        _previous_tmpdir.cleanup()
+
+    tmpdir = tempfile.TemporaryDirectory(prefix="sanitune_web_")
+    _previous_tmpdir = tmpdir
+
     input_path = Path(audio_path)
-    output_path = Path(tempfile.mkdtemp(prefix="sanitune_web_")) / f"{input_path.stem}_clean.wav"
+    output_path = Path(tmpdir.name) / f"{input_path.stem}_clean.wav"
 
     custom_words = [w.strip() for w in add_words.split(",") if w.strip()] if add_words else None
     excl_words = [w.strip() for w in exclude_words.split(",") if w.strip()] if exclude_words else None
@@ -61,9 +73,9 @@ def _process_audio(
             ai_provider=ai_provider,
             ai_api_key=ai_api_key,
         )
-    except Exception as exc:
+    except Exception:
         logger.exception("Processing failed")
-        return None, "", f"Processing failed: {exc}"
+        return None, "", "Processing failed due to an internal error. Check logs for details."
 
     # Build transcript HTML with flagged words highlighted
     flagged_indices = {fw.index for fw in result.flagged_words}
@@ -72,15 +84,16 @@ def _process_audio(
     html_parts = []
     for i, word in enumerate(result.transcription.words):
         timestamp = f"{word.start:.1f}s"
+        safe_text = html.escape(word.text)
         if i in flagged_indices:
-            term = flagged_terms[i]
+            safe_term = html.escape(flagged_terms[i])
             html_parts.append(
                 f'<span style="background:#ff4444;color:white;padding:2px 4px;'
-                f'border-radius:3px;cursor:help" title="Matched: {term} @ {timestamp}">'
-                f"{word.text}</span>"
+                f'border-radius:3px;cursor:help" title="Matched: {safe_term} @ {timestamp}">'
+                f"{safe_text}</span>"
             )
         else:
-            html_parts.append(f'<span title="{timestamp}">{word.text}</span>')
+            html_parts.append(f'<span title="{timestamp}">{safe_text}</span>')
 
     transcript_html = " ".join(html_parts)
 

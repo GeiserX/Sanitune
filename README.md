@@ -25,7 +25,7 @@ Key features:
 
 ## How It Works
 
-```
+```text
 Upload Song → Separate Vocals & Instrumentals → Transcribe Lyrics
     → Detect Profanity → [AI Suggestions] → Mute/Bleep/Replace → Remix → Clean Song
 ```
