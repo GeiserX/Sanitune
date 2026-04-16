@@ -59,6 +59,7 @@ voice = [
     "descript-audio-codec>=1.0.0",
     "pyworld>=0.3.4",
     "suno-bark>=0.0.1a",
+    "requests>=2.28.0",
 ]
 dev = [
     "pytest>=7.0",
