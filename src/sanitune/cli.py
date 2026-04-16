@@ -9,7 +9,7 @@ from pathlib import Path
 import click
 
 from sanitune import __version__
-from sanitune.config import VALID_DEVICE_OPTIONS, VALID_MODES, Settings
+from sanitune.config import VALID_DEVICE_OPTIONS, VALID_MODES, VALID_SYNTH_ENGINES, Settings
 
 
 @click.group()
@@ -62,6 +62,12 @@ def main() -> None:
     help="Custom replacement word mapping JSON file (for replace mode).",
 )
 @click.option("--tts-voice", default=None, help="Override TTS voice name (for replace mode).")
+@click.option(
+    "--synth-engine",
+    type=click.Choice(sorted(VALID_SYNTH_ENGINES)),
+    default="edge-tts",
+    help="Synthesis engine for replace mode. 'bark' supports singing. Default: edge-tts.",
+)
 @click.option("-v", "--verbose", is_flag=True, help="Enable verbose logging.")
 def process(
     input_file: Path,
@@ -79,6 +85,7 @@ def process(
     genius_api_key: str | None,
     custom_mapping: Path | None,
     tts_voice: str | None,
+    synth_engine: str,
     verbose: bool,
 ) -> None:
     """Process an audio file to remove explicit content."""
@@ -111,6 +118,7 @@ def process(
         genius_api_key=genius_api_key,
         custom_mapping_path=custom_mapping,
         tts_voice=tts_voice,
+        synth_engine=synth_engine,
     )
 
     click.echo(f"Output: {result.output_path}")
