@@ -179,7 +179,7 @@ def convert_voice(
         sf.write(str(src_path), tts_audio, sample_rate)
         sf.write(str(ref_path), reference_audio, sample_rate)
 
-        result = wrapper.convert_voice(
+        gen = wrapper.convert_voice(
             source=str(src_path),
             target=str(ref_path),
             diffusion_steps=diffusion_steps,
@@ -190,6 +190,21 @@ def convert_voice(
             pitch_shift=pitch_shift,
             stream_output=False,
         )
+
+        # convert_voice uses yield internally, making it always a generator.
+        # With stream_output=False, the audio is returned via StopIteration.value.
+        import types
+
+        if isinstance(gen, types.GeneratorType):
+            result = None
+            try:
+                while True:
+                    result = next(gen)
+            except StopIteration as e:
+                if e.value is not None:
+                    result = e.value
+        else:
+            result = gen
 
     # Result is (sample_rate, numpy_array) tuple or just numpy_array
     if isinstance(result, tuple):
