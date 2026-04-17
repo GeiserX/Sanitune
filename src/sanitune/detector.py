@@ -155,7 +155,7 @@ def detect_sentences(
     if not segments or not target_sentences:
         return []
 
-    targets = [_normalize_sentence(s) for s in target_sentences if s.strip()]
+    targets = [t for t in (_normalize_sentence(s) for s in target_sentences) if t]
     if not targets:
         return []
 
@@ -166,8 +166,10 @@ def detect_sentences(
             continue
 
         for target in targets:
-            # Match if target is contained in segment or segment is contained in target
-            if target in seg_norm or seg_norm in target:
+            # Word-boundary-aware matching: pad with spaces to avoid partial word hits
+            padded_seg = f" {seg_norm} "
+            padded_target = f" {target} "
+            if padded_target in padded_seg or padded_seg in padded_target:
                 sentence_word = Word(
                     text=seg.text,
                     start=seg.start,
