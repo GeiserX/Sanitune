@@ -1,6 +1,6 @@
 services:
   sanitune-web:
-    image: drumsergio/sanitune:0.4.0
+    image: drumsergio/sanitune:0.5.0
     ports:
       - "7860:7860"
     volumes:
@@ -28,7 +28,7 @@ services:
   # docker compose run --rm sanitune-cli process /app/input/song.mp3 -o /app/output/song_clean.wav
   #
   # sanitune-cli:
-  #   image: drumsergio/sanitune:0.4.0
+  #   image: drumsergio/sanitune:0.5.0
   #   volumes:
   #     - /mnt/user/appdata/sanitune/input:/app/input
   #     - /mnt/user/appdata/sanitune/output:/app/output
