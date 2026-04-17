@@ -32,9 +32,13 @@ class Segment:
 @dataclass
 class TranscriptionResult:
     words: list[Word]
-    segments: list[Segment]
     language: str
     full_text: str
+    segments: list[Segment] = None  # type: ignore[assignment]
+
+    def __post_init__(self) -> None:
+        if self.segments is None:
+            self.segments = []
 
 
 def transcribe(
