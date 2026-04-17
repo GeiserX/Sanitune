@@ -22,8 +22,17 @@ class Word:
 
 
 @dataclass
+class Segment:
+    text: str
+    start: float
+    end: float
+    words: list[Word]
+
+
+@dataclass
 class TranscriptionResult:
     words: list[Word]
+    segments: list[Segment]
     language: str
     full_text: str
 
@@ -94,30 +103,49 @@ def transcribe(
         # Restore original torch.load after all models are loaded
         torch.load = _original_torch_load
 
-    # Extract words
-    words = []
-    full_text_parts = []
-    for segment in result.get("word_segments", result.get("segments", [])):
-        if "words" in segment:
-            for w in segment["words"]:
-                words.append(Word(
+    # Extract words and segments
+    words: list[Word] = []
+    segments: list[Segment] = []
+    full_text_parts: list[str] = []
+
+    # WhisperX aligned output has "segments" with nested "words"
+    raw_segments = result.get("segments", [])
+    # word_segments is a flat list; prefer segments for sentence grouping
+    for seg in raw_segments:
+        seg_words: list[Word] = []
+        if "words" in seg:
+            for w in seg["words"]:
+                word = Word(
                     text=w.get("word", "").strip(),
                     start=w.get("start", 0.0),
                     end=w.get("end", 0.0),
                     score=w.get("score", 1.0),
-                ))
-        elif "word" in segment:
-            words.append(Word(
-                text=segment["word"].strip(),
-                start=segment.get("start", 0.0),
-                end=segment.get("end", 0.0),
-                score=segment.get("score", 1.0),
+                )
+                words.append(word)
+                seg_words.append(word)
+        elif "word" in seg:
+            word = Word(
+                text=seg["word"].strip(),
+                start=seg.get("start", 0.0),
+                end=seg.get("end", 0.0),
+                score=seg.get("score", 1.0),
+            )
+            words.append(word)
+            seg_words.append(word)
+
+        seg_text = seg.get("text", " ".join(w.text for w in seg_words)).strip()
+        if seg_text:
+            full_text_parts.append(seg_text)
+        if seg_words:
+            segments.append(Segment(
+                text=seg_text,
+                start=seg_words[0].start,
+                end=seg_words[-1].end,
+                words=seg_words,
             ))
-        if "text" in segment:
-            full_text_parts.append(segment["text"])
 
     full_text = " ".join(full_text_parts) if full_text_parts else " ".join(w.text for w in words)
     if not words:
         logger.warning("No words detected in transcription. The output will be identical to the input.")
-    logger.info("Transcription complete: %d words detected", len(words))
-    return TranscriptionResult(words=words, language=language, full_text=full_text)
+    logger.info("Transcription complete: %d words, %d segments detected", len(words), len(segments))
+    return TranscriptionResult(words=words, segments=segments, language=language, full_text=full_text)

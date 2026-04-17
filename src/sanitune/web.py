@@ -40,6 +40,7 @@ def _process_audio(
     synth_engine: str,
     target_words: str,
     replacement_mappings: str,
+    sentences_to_delete: str,
     use_auto_detection: bool,
     artist: str,
     title: str,
@@ -94,6 +95,11 @@ def _process_audio(
         elif not use_auto_detection:
             return None, "", "Replace mode requires word mappings (format: word=replacement)."
 
+    # Parse sentences to delete (one per line)
+    delete_sentences = None
+    if sentences_to_delete:
+        delete_sentences = [s.strip() for s in sentences_to_delete.splitlines() if s.strip()] or None
+
     # Configure AI suggestions if provided
     ai_api_key = llm_api_key.strip() if llm_api_key else None
     ai_provider = llm_provider if ai_api_key else None
@@ -114,19 +120,40 @@ def _process_audio(
             custom_mapping_path=custom_mapping_path,
             ai_provider=ai_provider,
             ai_api_key=ai_api_key,
+            delete_sentences=delete_sentences,
         )
     except Exception:
         logger.exception("Processing failed")
         return None, "", "Processing failed due to an internal error. Check logs for details."
 
     # Build transcript HTML with flagged words highlighted
-    flagged_indices = {fw.index for fw in result.flagged_words}
-    flagged_terms = {fw.index: fw.matched_term for fw in result.flagged_words}
+    flagged_indices = {fw.index for fw in result.flagged_words if fw.index >= 0}
+    flagged_terms = {fw.index: fw.matched_term for fw in result.flagged_words if fw.index >= 0}
+
+    # Collect sentence-level flag time ranges for highlighting
+    sentence_ranges = [
+        (fw.word.start, fw.word.end, fw.matched_term)
+        for fw in result.flagged_words if fw.index == -1
+    ]
 
     html_parts = []
     for i, word in enumerate(result.transcription.words):
         timestamp = f"{word.start:.1f}s"
         safe_text = html.escape(word.text)
+        # Check if this word falls inside a sentence-level deletion
+        in_sentence = False
+        for s_start, s_end, s_term in sentence_ranges:
+            if word.start >= s_start and word.end <= s_end:
+                safe_term = html.escape(s_term)
+                html_parts.append(
+                    f'<span style="background:#ff8800;color:white;padding:2px 4px;'
+                    f'border-radius:3px;cursor:help" title="{safe_term} @ {timestamp}">'
+                    f"{safe_text}</span>"
+                )
+                in_sentence = True
+                break
+        if in_sentence:
+            continue
         if i in flagged_indices:
             safe_term = html.escape(flagged_terms[i])
             html_parts.append(
@@ -139,10 +166,14 @@ def _process_audio(
 
     transcript_html = " ".join(html_parts)
 
-    status = (
-        f"Processed in {result.elapsed_seconds:.1f}s — "
-        f"{len(result.flagged_words)} words flagged"
-    )
+    word_flags = sum(1 for fw in result.flagged_words if fw.index >= 0)
+    sent_flags = sum(1 for fw in result.flagged_words if fw.index == -1)
+    parts = [f"Processed in {result.elapsed_seconds:.1f}s"]
+    if word_flags:
+        parts.append(f"{word_flags} words flagged")
+    if sent_flags:
+        parts.append(f"{sent_flags} sentences deleted")
+    status = " — ".join(parts)
 
     return str(output_path), transcript_html, status
 
@@ -199,6 +230,13 @@ def create_app():
                     visible=True,
                 )
 
+                gr.Markdown("### Sentences to Delete")
+                sentences_to_delete = gr.Textbox(
+                    label="Full sentences to mute (one per line)",
+                    placeholder="e.g.\nte voy a matar\nque te jodan",
+                    lines=3,
+                )
+
                 with gr.Row():
                     synth_engine = gr.Dropdown(
                         choices=["edge-tts", "bark"],
@@ -241,7 +279,8 @@ def create_app():
             fn=_process_audio,
             inputs=[
                 audio_input, mode, language, synth_engine,
-                target_words, replacement_mappings, use_auto_detection,
+                target_words, replacement_mappings, sentences_to_delete,
+                use_auto_detection,
                 artist, title, bleep_freq,
                 llm_provider, llm_api_key,
             ],

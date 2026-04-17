@@ -81,6 +81,7 @@ def main() -> None:
     default=None,
     help="Kits.ai voice model ID (create at app.kits.ai). Set via KITS_VOICE_MODEL_ID env var.",
 )
+@click.option("--delete-sentence", multiple=True, help="Full sentence to mute/delete (repeatable).")
 @click.option(
     "--ai-provider",
     type=click.Choice(["anthropic", "openai"]),
@@ -113,6 +114,7 @@ def process(
     synth_engine: str,
     kits_api_key: str | None,
     kits_voice_model_id: int | None,
+    delete_sentence: tuple[str, ...],
     ai_provider: str | None,
     ai_api_key: str | None,
     verbose: bool,
@@ -155,6 +157,7 @@ def process(
         kits_voice_model_id=kits_voice_model_id,
         ai_provider=ai_provider,
         ai_api_key=ai_api_key,
+        delete_sentences=list(delete_sentence) if delete_sentence else None,
     )
 
     click.echo(f"Output: {result.output_path}")
