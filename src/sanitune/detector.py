@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
 
-from sanitune.transcriber import Word
+from sanitune.transcriber import Segment, Word
 
 logger = logging.getLogger(__name__)
 TOKEN_STRIP_PATTERN = re.compile(r"[^\w']", re.UNICODE)
@@ -131,4 +131,56 @@ def detect(
             flagged.append(FlaggedWord(word=word, matched_term=matched_term, index=i))
 
     logger.info("Detected %d flagged words out of %d total", len(flagged), len(words))
+    return flagged
+
+
+def _normalize_sentence(text: str) -> str:
+    """Normalize a sentence for fuzzy matching: lowercase, strip punctuation, collapse whitespace."""
+    text = _normalize(text)
+    text = TOKEN_STRIP_PATTERN.sub(" ", text)
+    return " ".join(text.split())
+
+
+def detect_sentences(
+    segments: list[Segment],
+    target_sentences: list[str],
+) -> list[FlaggedWord]:
+    """Match user-provided sentences against transcribed segments and flag entire segments.
+
+    Uses normalized substring matching: if the target text appears within a segment
+    (or vice versa), the entire segment is flagged for deletion.
+
+    Returns FlaggedWord objects where the Word spans the full segment time range.
+    """
+    if not segments or not target_sentences:
+        return []
+
+    targets = [_normalize_sentence(s) for s in target_sentences if s.strip()]
+    if not targets:
+        return []
+
+    flagged: list[FlaggedWord] = []
+    for seg in segments:
+        seg_norm = _normalize_sentence(seg.text)
+        if not seg_norm:
+            continue
+
+        for target in targets:
+            # Match if target is contained in segment or segment is contained in target
+            if target in seg_norm or seg_norm in target:
+                sentence_word = Word(
+                    text=seg.text,
+                    start=seg.start,
+                    end=seg.end,
+                    score=1.0,
+                )
+                flagged.append(FlaggedWord(
+                    word=sentence_word,
+                    matched_term=f"[sentence] {target}",
+                    index=-1,
+                ))
+                logger.debug("Sentence match: '%s' in segment '%s' (%.2f-%.2f)", target, seg.text, seg.start, seg.end)
+                break  # Don't double-flag the same segment
+
+    logger.info("Detected %d sentence-level flags out of %d segments", len(flagged), len(segments))
     return flagged

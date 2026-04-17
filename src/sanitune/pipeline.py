@@ -9,7 +9,7 @@ from difflib import SequenceMatcher
 from pathlib import Path
 
 from sanitune.config import Settings, detect_device
-from sanitune.detector import FlaggedWord, build_profanity_set, clean_word, detect, match_word
+from sanitune.detector import FlaggedWord, build_profanity_set, clean_word, detect, detect_sentences, match_word
 from sanitune.editor import edit
 from sanitune.remixer import SUPPORTED_OUTPUT_EXTENSIONS, detect_audio_format, remix
 from sanitune.separator import separate
@@ -91,6 +91,7 @@ def process(
     kits_voice_model_id: int | None = None,
     ai_provider: str | None = None,
     ai_api_key: str | None = None,
+    delete_sentences: list[str] | None = None,
 ) -> PipelineResult:
     """Run the full Sanitune pipeline on an audio file."""
     settings = Settings.from_env()
@@ -179,6 +180,13 @@ def process(
         custom_words=custom_words,
         exclude_words=exclude_words,
     )
+
+    # Sentence-level deletion: match user-provided sentences against transcribed segments
+    if delete_sentences:
+        sentence_flags = detect_sentences(trans_result.segments, delete_sentences)
+        if sentence_flags:
+            flagged.extend(sentence_flags)
+            logger.info("Added %d sentence-level deletions", len(sentence_flags))
 
     if lyrics_words:
         profanity_set = build_profanity_set(
