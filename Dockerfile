@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- builder stage ----
-FROM python:3.14-slim AS builder
+FROM python:3.13-slim AS builder
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends build-essential git && \
@@ -12,7 +12,7 @@ WORKDIR /build
 # Install all dependencies — pip resolves compatible versions from PyPI
 COPY pyproject.toml README.md LICENSE ./
 RUN mkdir -p src/sanitune && \
-    echo '__version__ = "0.5.1"' > src/sanitune/__init__.py && \
+    echo '__version__ = "0.5.2"' > src/sanitune/__init__.py && \
     pip install --no-cache-dir "setuptools<80" && \
     pip install --no-cache-dir ".[lyrics,voice,web,ai]"
 
@@ -34,18 +34,18 @@ RUN TORCH_VER=$(python -c "import torch; print(torch.__version__.split('+')[0])"
         --index-url https://download.pytorch.org/whl/cpu
 
 # Remove leftover CUDA packages
-RUN rm -rf /usr/local/lib/python3.14/site-packages/nvidia/ \
-           /usr/local/lib/python3.14/site-packages/triton/
+RUN rm -rf /usr/local/lib/python3.13/site-packages/nvidia/ \
+           /usr/local/lib/python3.13/site-packages/triton/
 
 # Copy actual source and reinstall (deps already cached)
 COPY src/ src/
 RUN pip install --no-cache-dir --no-deps .
 
 # ---- runtime stage ----
-FROM python:3.14-slim
+FROM python:3.13-slim
 
 LABEL maintainer="GeiserX <9169332+GeiserX@users.noreply.github.com>"
-LABEL version="0.5.1"
+LABEL version="0.5.2"
 LABEL license="GPL-3.0-only"
 LABEL description="AI-powered song cleaning: separate vocals, detect profanity, and mute, bleep, or replace flagged words with the singer's voice"
 
@@ -54,7 +54,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy installed Python packages from builder
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy Seed-VC for singing voice conversion
