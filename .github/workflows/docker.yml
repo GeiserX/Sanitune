@@ -4,7 +4,17 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
+    paths:
+      - 'src/**'
+      - 'Dockerfile'
+      - 'pyproject.toml'
+      - 'requirements*.txt'
+      - '.github/workflows/docker.yml'
   workflow_dispatch:
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-push:
