@@ -47,7 +47,7 @@ jobs:
       - name: Install test dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-cov numpy soundfile click
+          pip install pytest pytest-cov numpy soundfile click requests
 
       - name: Install package (no heavy ML deps)
         run: pip install --no-deps -e .

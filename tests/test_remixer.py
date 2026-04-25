@@ -184,12 +184,17 @@ def test_detect_audio_format_success(tmp_path):
     audio = np.zeros(16000, dtype=np.float32)
     sf.write(str(wav_file), audio, 16000)
 
-    result = detect_audio_format(wav_file)
+    ffprobe_output = json.dumps({
+        "streams": [{"codec_type": "audio", "codec_name": "pcm_s16le", "sample_rate": "16000", "channels": "1"}],
+        "format": {"bit_rate": "256000"},
+    })
+    with patch("sanitune.remixer.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(stdout=ffprobe_output.encode())
+        result = detect_audio_format(wav_file)
     assert isinstance(result, dict)
-    assert "codec" in result
-    assert "sample_rate" in result
-    assert "channels" in result
-    assert "extension" in result
+    assert result["codec"] == "pcm_s16le"
+    assert result["sample_rate"] == 16000
+    assert result["channels"] == 1
     assert result["extension"] == ".wav"
 
 
@@ -198,10 +203,11 @@ def test_detect_audio_format_fallback(tmp_path):
     fake_file = tmp_path / "nonexistent.wav"
     fake_file.write_bytes(b"not audio")
 
-    result = detect_audio_format(fake_file)
-    # Should return fallback values without crashing
+    import subprocess as _sp
+    with patch("sanitune.remixer.subprocess.run", side_effect=_sp.SubprocessError("no ffprobe")):
+        result = detect_audio_format(fake_file)
     assert isinstance(result, dict)
-    assert result["sample_rate"] == 44100 or result["sample_rate"] > 0
+    assert result["sample_rate"] == 44100
 
 
 def test_supported_output_extensions():
