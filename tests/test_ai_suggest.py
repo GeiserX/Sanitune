@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from unittest.mock import MagicMock, patch
 
 from sanitune.ai_suggest import (
@@ -235,7 +234,7 @@ class TestSuggestReplacementsBatch:
             {"word": "fuck", "context_before": "a", "context_after": "b"},
             {"word": "fuck", "context_before": "c", "context_after": "d"},
         ]
-        result = suggest_replacements_batch(items, api_key="key")
+        suggest_replacements_batch(items, api_key="key")
         assert mock_suggest.call_count == 1  # Only called once for "fuck"
 
     @patch("sanitune.ai_suggest.suggest_replacement")

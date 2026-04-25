@@ -6,7 +6,6 @@ import sys
 from unittest.mock import MagicMock, patch
 
 import numpy as np
-import pytest
 
 from sanitune.transcriber import Segment, TranscriptionResult, Word
 
@@ -96,6 +95,7 @@ class TestTranscribe:
         with patch.dict(sys.modules, {"torch": mock_torch, "whisperx": mock_whisperx}):
             # Force fresh import
             import importlib
+
             import sanitune.transcriber as transcriber_mod
             importlib.reload(transcriber_mod)
 
@@ -124,6 +124,7 @@ class TestTranscribe:
 
         with patch.dict(sys.modules, {"torch": mock_torch, "whisperx": mock_whisperx}):
             import importlib
+
             import sanitune.transcriber as transcriber_mod
             importlib.reload(transcriber_mod)
 
@@ -146,10 +147,11 @@ class TestTranscribe:
 
         with patch.dict(sys.modules, {"torch": mock_torch, "whisperx": mock_whisperx}):
             import importlib
+
             import sanitune.transcriber as transcriber_mod
             importlib.reload(transcriber_mod)
 
-            result = transcriber_mod.transcribe(audio, 16000, device="mps", language="en")
+            transcriber_mod.transcribe(audio, 16000, device="mps", language="en")
             # Should have fallen back to cpu
             load_call = mock_whisperx.load_model.call_args
             assert load_call[0][1] == "cpu"
@@ -170,6 +172,7 @@ class TestTranscribe:
 
         with patch.dict(sys.modules, {"torch": mock_torch, "whisperx": mock_whisperx}):
             import importlib
+
             import sanitune.transcriber as transcriber_mod
             importlib.reload(transcriber_mod)
 
@@ -201,6 +204,7 @@ class TestTranscribe:
 
         with patch.dict(sys.modules, {"torch": mock_torch, "whisperx": mock_whisperx}):
             import importlib
+
             import sanitune.transcriber as transcriber_mod
             importlib.reload(transcriber_mod)
 
@@ -224,6 +228,7 @@ class TestTranscribe:
 
         with patch.dict(sys.modules, {"torch": mock_torch, "whisperx": mock_whisperx}):
             import importlib
+
             import sanitune.transcriber as transcriber_mod
             importlib.reload(transcriber_mod)
 

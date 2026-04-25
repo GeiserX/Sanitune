@@ -4,15 +4,13 @@ from __future__ import annotations
 
 import io
 import sys
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import numpy as np
-import pytest
 import soundfile as sf
 
-from sanitune.separator import SeparationResult, _load_audio, _SOUNDFILE_FORMATS
+from sanitune.separator import _SOUNDFILE_FORMATS, SeparationResult, _load_audio
 
 
 class TestLoadAudio:
@@ -131,6 +129,7 @@ class TestSeparate:
                  "demucs.pretrained": mock_demucs_pretrained,
              }):
             import importlib
+
             import sanitune.separator as sep_mod
             importlib.reload(sep_mod)
 
@@ -192,6 +191,7 @@ class TestSeparate:
                  "demucs.pretrained": mock_demucs_pretrained,
              }):
             import importlib
+
             import sanitune.separator as sep_mod
             importlib.reload(sep_mod)
 

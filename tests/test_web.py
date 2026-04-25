@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import json
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -102,9 +101,9 @@ class TestProcessAudio:
     @patch("sanitune.pipeline.process")
     @patch("sanitune.config.detect_device")
     def test_successful_processing(self, mock_device, mock_process, tmp_path):
-        from sanitune.web import _process_audio
         from sanitune.detector import FlaggedWord
         from sanitune.transcriber import TranscriptionResult, Word
+        from sanitune.web import _process_audio
 
         mock_device.return_value = "cpu"
 
@@ -140,9 +139,9 @@ class TestProcessAudio:
     @patch("sanitune.pipeline.process")
     @patch("sanitune.config.detect_device")
     def test_sentence_deletion_flagging(self, mock_device, mock_process, tmp_path):
-        from sanitune.web import _process_audio
         from sanitune.detector import FlaggedWord
         from sanitune.transcriber import TranscriptionResult, Word
+        from sanitune.web import _process_audio
 
         mock_device.return_value = "cpu"
 
@@ -178,8 +177,8 @@ class TestProcessAudio:
     @patch("sanitune.pipeline.process")
     @patch("sanitune.config.detect_device")
     def test_replace_mode_with_mappings(self, mock_device, mock_process, tmp_path):
+        from sanitune.transcriber import TranscriptionResult
         from sanitune.web import _process_audio
-        from sanitune.transcriber import TranscriptionResult, Word
 
         mock_device.return_value = "cpu"
         mock_process.return_value = SimpleNamespace(
@@ -204,8 +203,8 @@ class TestProcessAudio:
     @patch("sanitune.pipeline.process")
     @patch("sanitune.config.detect_device")
     def test_ai_suggestions_passed(self, mock_device, mock_process, tmp_path):
-        from sanitune.web import _process_audio
         from sanitune.transcriber import TranscriptionResult
+        from sanitune.web import _process_audio
 
         mock_device.return_value = "cpu"
         mock_process.return_value = SimpleNamespace(

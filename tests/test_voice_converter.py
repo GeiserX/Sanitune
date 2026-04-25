@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -122,6 +121,7 @@ class TestExtractReference:
 class TestGetWrapper:
     def test_raises_without_seed_vc(self, monkeypatch):
         import builtins
+
         import sanitune.voice_converter as vc
 
         vc._wrapper = None

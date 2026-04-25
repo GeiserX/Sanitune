@@ -3,8 +3,8 @@
 import pytest
 
 from sanitune.config import (
-    VALID_DEVICES,
     VALID_DEVICE_OPTIONS,
+    VALID_DEVICES,
     VALID_MODES,
     VALID_SYNTH_ENGINES,
     Settings,

@@ -1,6 +1,5 @@
 """Tests for the remixer module."""
 
-import io
 import json
 from unittest.mock import MagicMock, patch
 
@@ -10,8 +9,8 @@ import soundfile as sf
 
 from sanitune.detector import FlaggedWord
 from sanitune.remixer import (
-    SUPPORTED_OUTPUT_EXTENSIONS,
     _FFMPEG_CODECS,
+    SUPPORTED_OUTPUT_EXTENSIONS,
     _encode_with_ffmpeg,
     detect_audio_format,
     remix,

@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 import soundfile as sf
 
-from sanitune.kits_client import BASE_URL, convert_voice, list_voice_models
+from sanitune.kits_client import convert_voice, list_voice_models
 
 
 def _make_wav_bytes(audio: np.ndarray, sr: int) -> bytes:

@@ -1,7 +1,7 @@
 """Tests for the lyrics module."""
 
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from sanitune.lyrics import (
     LyricsResult,
