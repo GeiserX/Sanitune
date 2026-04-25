@@ -7,6 +7,7 @@
   <a href="https://github.com/GeiserX/Sanitune/releases"><img src="https://img.shields.io/github/v/release/GeiserX/Sanitune" alt="Release"></a>
   <a href="https://github.com/GeiserX/Sanitune/stargazers"><img src="https://img.shields.io/github/stars/GeiserX/Sanitune" alt="Stars"></a>
   <a href="https://hub.docker.com/r/drumsergio/sanitune"><img src="https://img.shields.io/docker/pulls/drumsergio/sanitune" alt="Docker Pulls"></a>
+  <a href="https://codecov.io/gh/GeiserX/Sanitune"><img src="https://codecov.io/gh/GeiserX/Sanitune/graph/badge.svg" alt="codecov"></a>
 </p>
 
 ---
