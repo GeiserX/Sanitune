@@ -49,6 +49,9 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
+    ignore:
+      - dependency-name: "python"
+        versions: [">=3.14"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
