@@ -43,11 +43,11 @@ lyrics = [
     "lyricsgenius>=3.0.0",
 ]
 replace = [
-    "edge-tts>=6.1.0",
+    "edge-tts>=6.1.19",
     "librosa>=0.10.0",
 ]
 voice = [
-    "edge-tts>=6.1.0",
+    "edge-tts>=6.1.19",
     "librosa>=0.10.0",
     "transformers>=4.35.0",
     "einops>=0.7.0",
