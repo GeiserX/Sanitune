@@ -62,7 +62,7 @@ voice = [
     "requests>=2.28.0",
 ]
 web = [
-    "gradio>=4.0.0",
+    "gradio>=4.44.1",
 ]
 ai = [
     "requests>=2.28.0",
