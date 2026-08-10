@@ -39,7 +39,7 @@ dependencies = [
 
 [project.optional-dependencies]
 lyrics = [
-    "syncedlyrics>=0.10.0",
+    "syncedlyrics>=0.10.1",
     "lyricsgenius>=3.0.0",
 ]
 replace = [
