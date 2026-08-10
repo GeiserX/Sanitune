@@ -58,7 +58,7 @@ voice = [
     "pyyaml>=6.0",
     "descript-audio-codec>=1.0.0",
     "pyworld>=0.3.4",
-    "suno-bark>=0.0.1a",
+    "suno-bark>=0.1.5",
     "requests>=2.28.0",
 ]
 web = [
