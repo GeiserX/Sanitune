@@ -59,13 +59,13 @@ voice = [
     "descript-audio-codec>=1.0.0",
     "pyworld>=0.3.5",
     "suno-bark>=0.1.5",
-    "requests>=2.28.0",
+    "requests>=2.34.2",
 ]
 web = [
     "gradio>=4.44.1",
 ]
 ai = [
-    "requests>=2.28.0",
+    "requests>=2.34.2",
 ]
 dev = [
     "pytest>=7.0",
