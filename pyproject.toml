@@ -70,7 +70,7 @@ ai = [
 dev = [
     "pytest>=7.0",
     "pytest-cov>=7.1.0",
-    "ruff>=0.4.0",
+    "ruff>=0.16.4",
 ]
 
 [project.scripts]
