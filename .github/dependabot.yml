@@ -26,6 +26,13 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      # pyworld 0.3.6 publishes ONLY Windows wheels for cp36/37/38 - no sdist,
+      # nothing for Linux, nothing for 3.13. Our image installs the voice extra
+      # on Linux/3.13, so a >=0.3.6 floor is unsatisfiable there and the Docker
+      # build dies. 0.3.5 still ships an sdist, so it stays installable.
+      # Scoped to this one version: a 0.3.7 with real wheels should come through.
+      - dependency-name: "pyworld"
+        versions: ["0.3.6"]
 
   - package-ecosystem: "docker"
     directory: "/"
