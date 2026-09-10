@@ -33,6 +33,22 @@ updates:
       # Scoped to this one version: a 0.3.7 with real wheels should come through.
       - dependency-name: "pyworld"
         versions: ["0.3.6"]
+      # whisperx 3.8.6 (our floor, and its newest release) declares torch~=2.8.0,
+      # so torch is capped at 2.8.x until whisperx widens that itself. torchaudio
+      # ships in lockstep and pins an exact torch (2.9.0 -> torch==2.9.0,
+      # 2.10.0 -> torch==2.10.0), and its newest release is 2.11.0 - there is no
+      # 2.14.0. #65 proposed torch>=2.14.0, which cannot resolve at all, and moving
+      # either of the pair alone could only ever produce a mismatched build.
+      # Blocked by update-type rather than `versions:` on purpose: `versions:`
+      # suppresses SECURITY updates for the pair too, and a torch CVE is exactly
+      # the thing we still want to be told about even while the floor is stuck.
+      # Majors are already covered by the wildcard entry above, patch updates
+      # inside 2.8.x still come through, and security updates are unaffected.
+      # Lift both together with whisperx, never before.
+      - dependency-name: "torch"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "torchaudio"
+        update-types: ["version-update:semver-minor"]
 
   - package-ecosystem: "docker"
     directory: "/"
