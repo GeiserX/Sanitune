@@ -33,6 +33,18 @@ updates:
       # Scoped to this one version: a 0.3.7 with real wheels should come through.
       - dependency-name: "pyworld"
         versions: ["0.3.6"]
+      # whisperx 3.8.6 (our floor, and its newest release) declares torch~=2.8.0,
+      # so torch is capped at 2.8.x until whisperx widens that itself. torchaudio
+      # ships in lockstep and pins an exact torch (2.9.0 -> torch==2.9.0,
+      # 2.10.0 -> torch==2.10.0), and its newest release is 2.11.0 - there is no
+      # 2.14.0. #65 proposed torch>=2.14.0, which cannot resolve at all, and moving
+      # either of the pair alone could only ever produce a mismatched build.
+      # Patch updates inside 2.8.x still come through. Lift both together with
+      # whisperx, never before.
+      - dependency-name: "torch"
+        versions: [">=2.9.0"]
+      - dependency-name: "torchaudio"
+        versions: [">=2.9.0"]
 
   - package-ecosystem: "docker"
     directory: "/"
