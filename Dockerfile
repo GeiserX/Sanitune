@@ -10,11 +10,25 @@ RUN apt-get update && \
 WORKDIR /build
 
 # Install all dependencies — pip resolves compatible versions from PyPI
+#
+# The `voice` extra is deliberately NOT installed here: it cannot be resolved on
+# Python 3.13 at all. voice pulls descript-audio-codec -> descript-audiotools,
+# which pins protobuf<3.20, and no protobuf below 3.20 ships a cp313 wheel, while
+# whisperx pulls protobuf 7.x through onnxruntime/grpcio. pip backtracks looking
+# for a way out and dies on a kiwisolver 1.4.5 sdist (its legacy pyproject has no
+# project.version, which modern setuptools rejects) — a fatal
+# metadata-generation-failed that points at the wrong package entirely. That is
+# what broke this image from 2026-08-24 with no change on our side.
+#
+# Nothing under src/ imports the voice packages, and voice_converter.py already
+# raises a clear "install sanitune[voice]" ImportError, so the CLI, the pipeline
+# and the web UI all work without it. Add voice back when descript-audiotools
+# drops the protobuf<3.20 pin.
 COPY pyproject.toml README.md LICENSE ./
 RUN mkdir -p src/sanitune && \
     echo '__version__ = "0.5.2"' > src/sanitune/__init__.py && \
     pip install --no-cache-dir "setuptools<80" && \
-    pip install --no-cache-dir ".[lyrics,voice,web,ai]"
+    pip install --no-cache-dir ".[lyrics,web,ai]"
 
 # Clone Seed-VC for singing voice conversion (GPL-3.0, archived but stable)
 RUN git clone --depth 1 https://github.com/Plachtaa/seed-vc.git /opt/seed-vc && \
