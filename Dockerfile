@@ -26,7 +26,7 @@ WORKDIR /build
 # drops the protobuf<3.20 pin.
 COPY pyproject.toml README.md LICENSE ./
 RUN mkdir -p src/sanitune && \
-    echo '__version__ = "0.5.2"' > src/sanitune/__init__.py && \
+    echo '__version__ = "0.5.3"' > src/sanitune/__init__.py && \
     pip install --no-cache-dir "setuptools<80" && \
     pip install --no-cache-dir ".[lyrics,web,ai]"
 
@@ -59,12 +59,16 @@ RUN pip install --no-cache-dir --no-deps .
 FROM python:3.13.15-slim
 
 LABEL maintainer="GeiserX <9169332+GeiserX@users.noreply.github.com>"
-LABEL version="0.5.2"
+LABEL version="0.5.3"
 LABEL license="GPL-3.0-only"
 LABEL description="AI-powered song cleaning: separate vocals, detect profanity, and mute, bleep, or replace flagged words with the singer's voice"
 
+# ca-certificates: the base image ships 20250419, which trusts the compromised
+# eMudhra (emSign) intermediates; trixie's 20250419+deb13u1 distrusts them.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ffmpeg && \
+    apt-get install -y --only-upgrade ca-certificates && \
+    dpkg --compare-versions "$(dpkg-query -W -f='${Version}' ca-certificates)" ge 20250419+deb13u1 && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy installed Python packages from builder
