@@ -40,7 +40,7 @@ dependencies = [
 [project.optional-dependencies]
 lyrics = [
     "syncedlyrics>=0.10.1",
-    "lyricsgenius>=3.12.2",
+    "lyricsgenius>=3.15.0",
 ]
 replace = [
     "edge-tts>=6.1.19",
