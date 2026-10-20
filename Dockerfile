@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- builder stage ----
-FROM python:3.13.15-slim AS builder
+FROM python:3.13.16-slim AS builder
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends build-essential git && \
@@ -56,7 +56,7 @@ COPY src/ src/
 RUN pip install --no-cache-dir --no-deps .
 
 # ---- runtime stage ----
-FROM python:3.13.15-slim
+FROM python:3.13.16-slim
 
 LABEL maintainer="GeiserX <9169332+GeiserX@users.noreply.github.com>"
 LABEL version="0.5.3"
